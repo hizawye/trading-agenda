@@ -41,3 +41,13 @@
 ### SQLite Boolean Type Casting
 **Decision:** Explicitly cast boolean fields to integers in SELECT queries
 **Rationale:** Android SQLite returns booleans as 1/0 strings, not numbers. The `(enabled + 0)` pattern forces numeric conversion for consistency across platforms.
+
+## 2026-01-14: NY Timezone Implementation
+
+### America/New_York Timezone for All Sessions
+**Decision:** Use NY timezone (America/New_York) for all session indicators, alerts, and countdowns instead of user's local timezone
+**Rationale:**
+- ICT trading methodology is based on New York market hours
+- All session times (Asia 12am-5am, London 5am-10am, NY AM 10am-2pm, NY PM 2pm-8pm) are in EST/EDT
+- Using local timezone would show incorrect session indicators for users outside EST
+- Ensures consistent trading times regardless of user location
