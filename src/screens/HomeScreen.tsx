@@ -3,18 +3,18 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { useTradeStore } from '../stores/tradeStore';
 import { useAlertStore } from '../stores/alertStore';
 import { getCurrentSession, SESSIONS } from '../constants/sessions';
-import { formatTime, getTimeUntil } from '../lib/utils';
+import { formatTime, getTimeUntil, getNYTime } from '../lib/utils';
 
 export default function HomeScreen({ navigation }: any) {
   const { trades, loadTrades, getTodayTrades, getTodayPnL, getWinRate } = useTradeStore();
   const { loadAlerts, getNextAlert } = useAlertStore();
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [currentTime, setCurrentTime] = useState(getNYTime());
 
   useEffect(() => {
     loadTrades();
     loadAlerts();
 
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    const timer = setInterval(() => setCurrentTime(getNYTime()), 1000);
     return () => clearInterval(timer);
   }, []);
 
@@ -39,7 +39,7 @@ export default function HomeScreen({ navigation }: any) {
           <Text style={styles.offHours}>Off-hours</Text>
         )}
         <Text style={styles.currentTime}>
-          {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+          {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} EST
         </Text>
       </View>
 

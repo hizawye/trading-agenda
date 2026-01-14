@@ -1,4 +1,5 @@
 import { SessionInfo } from '../types';
+import { getNYHour } from '../lib/utils';
 
 export const SESSIONS: SessionInfo[] = [
   {
@@ -32,8 +33,7 @@ export const SESSIONS: SessionInfo[] = [
 ];
 
 export const getCurrentSession = (): SessionInfo | null => {
-  const now = new Date();
-  const hour = now.getHours();
+  const hour = getNYHour(); // Use NY time instead of local
 
   return SESSIONS.find(s => hour >= s.startHour && hour < s.endHour) || null;
 };
