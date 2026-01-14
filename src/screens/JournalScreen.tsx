@@ -11,8 +11,9 @@ import {
   Alert,
 } from 'react-native';
 import { useTradeStore } from '../stores/tradeStore';
-import { Trade, Session, SetupType, TradeDirection, TradeOutcome, Confirmation } from '../types';
+import { Trade, Session, SetupType, TradeDirection, TradeOutcome, Confirmation, Killzone } from '../types';
 import { getSessionById, getCurrentSession, SESSIONS } from '../constants/sessions';
+import { DEFAULT_KILLZONES, getCurrentKillzone } from '../constants/killzones';
 import { formatDateTime, calculateRiskReward } from '../lib/utils';
 
 const SETUP_TYPES: SetupType[] = ['continuation', 'reversal', 'liquidity_sweep', 'fvg_fill', 'breakout', 'other'];
@@ -27,6 +28,7 @@ export default function JournalScreen() {
   // Form state
   const [session, setSession] = useState<Session>('ny_am');
   const [timeWindow, setTimeWindow] = useState('');
+  const [killzone, setKillzone] = useState<Killzone>('ny_am_kz');
   const [setupType, setSetupType] = useState<SetupType>('continuation');
   const [direction, setDirection] = useState<TradeDirection>('long');
   const [symbol, setSymbol] = useState('');
@@ -44,8 +46,11 @@ export default function JournalScreen() {
 
   const resetForm = () => {
     const current = getCurrentSession();
+    const currentKz = getCurrentKillzone();
+
     setSession(current?.id || 'ny_am');
-    setTimeWindow(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }));
+    setKillzone(currentKz?.id || 'ny_am_kz');
+    setTimeWindow(''); // Keep for backward compat
     setSetupType('continuation');
     setDirection('long');
     setSymbol('');
@@ -68,6 +73,7 @@ export default function JournalScreen() {
     setEditingTrade(trade);
     setSession(trade.session);
     setTimeWindow(trade.timeWindow);
+    setKillzone(trade.killzone || 'ny_am_kz');
     setSetupType(trade.setupType);
     setDirection(trade.direction);
     setSymbol(trade.symbol);
@@ -90,7 +96,8 @@ export default function JournalScreen() {
     const tradeData = {
       timestamp: Date.now(),
       session,
-      timeWindow,
+      timeWindow, // Keep for backward compat
+      killzone,
       setupType,
       direction,
       symbol,
@@ -210,6 +217,27 @@ export default function JournalScreen() {
                 onPress={() => setSession(s.id)}
               >
                 <Text style={styles.optionText}>{s.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Killzone */}
+          <Text style={styles.label}>Killzone</Text>
+          <View style={styles.optionRow}>
+            {DEFAULT_KILLZONES.map((kz) => (
+              <TouchableOpacity
+                key={kz.id}
+                style={[
+                  styles.killzoneOption,
+                  killzone === kz.id && { backgroundColor: kz.color, borderColor: kz.color },
+                ]}
+                onPress={() => {
+                  setKillzone(kz.id);
+                  // Auto-set session based on killzone
+                  setSession(kz.session);
+                }}
+              >
+                <Text style={[styles.optionText, styles.killzoneText]}>{kz.name}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -449,6 +477,17 @@ const styles = StyleSheet.create({
   longOption: { backgroundColor: '#10B981' },
   shortOption: { backgroundColor: '#EF4444' },
   optionText: { color: '#FFF', fontSize: 13 },
+  killzoneOption: {
+    backgroundColor: '#1E293B',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginRight: 6,
+    marginBottom: 6,
+    borderWidth: 2,
+    borderColor: '#334155',
+  },
+  killzoneText: { fontSize: 11 },
   input: {
     backgroundColor: '#1E293B',
     borderRadius: 8,
