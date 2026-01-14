@@ -29,7 +29,7 @@
 - [ ] Real device testing
 
 ## Known Issues
-- None currently identified
+- None currently identified (fixed SQLite boolean casting on Android)
 
 ## Where to Start Next
 1. Add image picker to trade form

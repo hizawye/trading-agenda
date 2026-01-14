@@ -31,3 +31,13 @@
 ### Local-Only Storage
 **Decision:** No cloud backend, all data stays on device
 **Rationale:** User explicitly requested local-only to keep it simple
+
+## 2026-01-14: Package Version Compatibility Fix
+
+### React Native Package Downgrades
+**Decision:** Downgrade react-native-gesture-handler (2.30.0 → 2.28.0) and react-native-screens (4.19.0 → 4.16.0)
+**Rationale:** Expo 54 SDK expects specific peer dependency versions. Using incompatible versions causes runtime issues and build warnings.
+
+### SQLite Boolean Type Casting
+**Decision:** Explicitly cast boolean fields to integers in SELECT queries
+**Rationale:** Android SQLite returns booleans as 1/0 strings, not numbers. The `(enabled + 0)` pattern forces numeric conversion for consistency across platforms.
