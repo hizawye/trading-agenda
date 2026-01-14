@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Trade, Session } from '../types';
+import { Trade, Session, Killzone } from '../types';
 import * as db from '../lib/database';
 import { generateId } from '../lib/utils';
 
@@ -17,6 +17,9 @@ interface TradeState {
   // Analytics
   getWinRate: () => number;
   getWinRateBySession: (session: Session) => number;
+  getWinRateByKillzone: (killzone: Killzone) => number;
+  getKillzoneTrades: (killzone: Killzone) => Trade[];
+  getTodayKillzonePnL: (killzone: Killzone) => number;
   getTodayTrades: () => Trade[];
   getTodayPnL: () => number;
 }
@@ -81,6 +84,26 @@ export const useTradeStore = create<TradeState>((set, get) => ({
     if (sessionTrades.length === 0) return 0;
     const wins = sessionTrades.filter((t) => t.outcome === 'win').length;
     return (wins / sessionTrades.length) * 100;
+  },
+
+  getWinRateByKillzone: (killzone) => {
+    const kzTrades = get().trades.filter(
+      (t) => t.killzone === killzone && t.outcome !== 'pending'
+    );
+    if (kzTrades.length === 0) return 0;
+    const wins = kzTrades.filter((t) => t.outcome === 'win').length;
+    return (wins / kzTrades.length) * 100;
+  },
+
+  getKillzoneTrades: (killzone) => {
+    return get().trades.filter((t) => t.killzone === killzone);
+  },
+
+  getTodayKillzonePnL: (killzone) => {
+    const todayTrades = get().getTodayTrades();
+    return todayTrades
+      .filter((t) => t.killzone === killzone)
+      .reduce((sum, t) => sum + (t.pnl || 0), 0);
   },
 
   getTodayTrades: () => {
