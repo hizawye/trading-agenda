@@ -182,7 +182,9 @@ export const deleteAlert = async (id: string): Promise<void> => {
 
 export const getAllAlerts = async (): Promise<Alert[]> => {
   const database = await getDatabase();
-  const rows = await database.getAllAsync<any>('SELECT * FROM alerts ORDER BY time');
+  const rows = await database.getAllAsync<any>(
+    'SELECT id, time, label, description, (enabled + 0) as enabled, days FROM alerts ORDER BY time'
+  );
   return rows.map(parseAlert);
 };
 
@@ -227,7 +229,9 @@ export const deleteRule = async (id: string): Promise<void> => {
 
 export const getAllRules = async (): Promise<Rule[]> => {
   const database = await getDatabase();
-  const rows = await database.getAllAsync<any>('SELECT * FROM rules ORDER BY category, "order"');
+  const rows = await database.getAllAsync<any>(
+    'SELECT id, category, rule, (active + 0) as active, "order" FROM rules ORDER BY category, "order"'
+  );
   return rows.map(parseRule);
 };
 
