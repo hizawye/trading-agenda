@@ -1,5 +1,5 @@
 import * as SQLite from 'expo-sqlite';
-import { Trade, Alert, Rule } from '../types';
+import { Trade, Alert, Rule, Killzone } from '../types';
 
 let db: SQLite.SQLiteDatabase | null = null;
 
@@ -7,6 +7,7 @@ export const getDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
   if (db) return db;
   db = await SQLite.openDatabaseAsync('trading-agenda.db');
   await initializeTables();
+  await migrateToKillzones();
   return db;
 };
 
@@ -58,16 +59,91 @@ const initializeTables = async () => {
   `);
 };
 
+// Migration: Add killzone column if it doesn't exist
+const migrateToKillzones = async () => {
+  if (!db) return;
+
+  try {
+    // Check if killzone column exists
+    const tableInfo = await db.getAllAsync<any>('PRAGMA table_info(trades)');
+    const hasKillzone = tableInfo.some((col: any) => col.name === 'killzone');
+
+    if (!hasKillzone) {
+      console.log('Migrating trades table to add killzone column...');
+
+      // Add killzone column
+      await db.execAsync(`
+        ALTER TABLE trades ADD COLUMN killzone TEXT;
+        CREATE INDEX IF NOT EXISTS idx_trades_killzone ON trades(killzone);
+      `);
+
+      // Migrate existing timeWindow data to killzone enum
+      await migrateTimeWindowToKillzone();
+
+      console.log('Migration complete!');
+    }
+  } catch (error) {
+    console.error('Migration error:', error);
+  }
+};
+
+// Infer killzone from freeform timeWindow text
+const inferKillzoneFromText = (text: string): Killzone | null => {
+  if (!text) return null;
+
+  const lower = text.toLowerCase();
+
+  // Keyword matching
+  if (lower.includes('asia')) return 'asia_kz';
+  if (lower.includes('london')) return 'london_kz';
+  if (lower.includes('lunch')) return 'ny_lunch';
+  if (lower.includes('pm') || lower.includes('afternoon')) return 'ny_pm_kz';
+  if (lower.includes('am') || lower.includes('morning')) return 'ny_am_kz';
+
+  // Time-based matching (parse HH:MM or HH format)
+  const timeMatch = text.match(/(\d{1,2}):?(\d{2})?/);
+  if (timeMatch) {
+    const hour = parseInt(timeMatch[1], 10);
+
+    // Map hour to nearest killzone
+    if (hour >= 20 || hour < 2) return 'asia_kz';
+    if (hour >= 2 && hour < 9) return 'london_kz';
+    if (hour >= 9 && hour < 12) return 'ny_am_kz';
+    if (hour >= 12 && hour < 14) return 'ny_lunch';
+    if (hour >= 14 && hour < 20) return 'ny_pm_kz';
+  }
+
+  return null;
+};
+
+const migrateTimeWindowToKillzone = async () => {
+  if (!db) return;
+
+  const trades = await db.getAllAsync<any>(
+    'SELECT id, timeWindow FROM trades WHERE killzone IS NULL'
+  );
+
+  for (const trade of trades) {
+    const kz = inferKillzoneFromText(trade.timeWindow);
+    if (kz) {
+      await db.runAsync('UPDATE trades SET killzone=? WHERE id=?', kz, trade.id);
+    }
+  }
+
+  console.log(`Migrated ${trades.length} trades to killzone format`);
+};
+
 // Trade CRUD operations
 export const insertTrade = async (trade: Trade): Promise<void> => {
   const database = await getDatabase();
   await database.runAsync(
-    `INSERT INTO trades (id, timestamp, session, timeWindow, setupType, direction, symbol, entry, stopLoss, takeProfit, outcome, pnl, riskReward, images, notes, confirmations, createdAt, updatedAt)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO trades (id, timestamp, session, timeWindow, killzone, setupType, direction, symbol, entry, stopLoss, takeProfit, outcome, pnl, riskReward, images, notes, confirmations, createdAt, updatedAt)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     trade.id,
     trade.timestamp,
     trade.session,
     trade.timeWindow,
+    trade.killzone ?? null,
     trade.setupType,
     trade.direction,
     trade.symbol,
@@ -88,11 +164,12 @@ export const insertTrade = async (trade: Trade): Promise<void> => {
 export const updateTrade = async (trade: Trade): Promise<void> => {
   const database = await getDatabase();
   await database.runAsync(
-    `UPDATE trades SET timestamp=?, session=?, timeWindow=?, setupType=?, direction=?, symbol=?, entry=?, stopLoss=?, takeProfit=?, outcome=?, pnl=?, riskReward=?, images=?, notes=?, confirmations=?, updatedAt=?
+    `UPDATE trades SET timestamp=?, session=?, timeWindow=?, killzone=?, setupType=?, direction=?, symbol=?, entry=?, stopLoss=?, takeProfit=?, outcome=?, pnl=?, riskReward=?, images=?, notes=?, confirmations=?, updatedAt=?
      WHERE id=?`,
     trade.timestamp,
     trade.session,
     trade.timeWindow,
+    trade.killzone ?? null,
     trade.setupType,
     trade.direction,
     trade.symbol,
@@ -132,6 +209,7 @@ const parseTrade = (row: any): Trade => ({
   timestamp: Number(row.timestamp),
   session: row.session,
   timeWindow: row.timeWindow || '',
+  killzone: row.killzone || undefined,
   setupType: row.setupType,
   direction: row.direction,
   symbol: row.symbol || '',
