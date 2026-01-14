@@ -2,7 +2,8 @@ import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useTradeStore } from '../stores/tradeStore';
 import { SESSIONS } from '../constants/sessions';
-import { Session, SetupType } from '../types';
+import { DEFAULT_KILLZONES } from '../constants/killzones';
+import { Session, SetupType, Killzone } from '../types';
 
 const SETUP_TYPES: SetupType[] = ['continuation', 'reversal', 'liquidity_sweep', 'fvg_fill', 'breakout', 'other'];
 
@@ -35,6 +36,16 @@ export default function AnalyticsScreen() {
     return {
       total: setupTrades.length,
       winRate: setupTrades.length > 0 ? (setupWins / setupTrades.length) * 100 : 0,
+    };
+  };
+
+  const getKillzoneStats = (killzoneId: Killzone) => {
+    const kzTrades = completedTrades.filter((t) => t.killzone === killzoneId);
+    const kzWins = kzTrades.filter((t) => t.outcome === 'win').length;
+    return {
+      total: kzTrades.length,
+      winRate: kzTrades.length > 0 ? (kzWins / kzTrades.length) * 100 : 0,
+      pnl: trades.filter((t) => t.killzone === killzoneId).reduce((sum, t) => sum + (t.pnl || 0), 0),
     };
   };
 
@@ -86,6 +97,32 @@ export default function AnalyticsScreen() {
               <View style={styles.rowLeft}>
                 <View style={[styles.dot, { backgroundColor: session.color }]} />
                 <Text style={styles.rowLabel}>{session.name}</Text>
+              </View>
+              <View style={styles.rowRight}>
+                <Text style={styles.rowStat}>{stats.total} trades</Text>
+                <Text style={[styles.rowWinRate, { color: stats.winRate >= 50 ? '#10B981' : '#EF4444' }]}>
+                  {stats.winRate.toFixed(0)}%
+                </Text>
+                <Text style={[styles.rowPnL, { color: stats.pnl >= 0 ? '#10B981' : '#EF4444' }]}>
+                  {stats.pnl >= 0 ? '+' : ''}{stats.pnl.toFixed(0)}
+                </Text>
+              </View>
+            </View>
+          );
+        })}
+      </View>
+
+      {/* By Killzone */}
+      <View style={styles.card}>
+        <Text style={styles.sectionTitle}>By Killzone</Text>
+        {DEFAULT_KILLZONES.map((kz) => {
+          const stats = getKillzoneStats(kz.id);
+          if (stats.total === 0) return null;
+          return (
+            <View key={kz.id} style={styles.row}>
+              <View style={styles.rowLeft}>
+                <View style={[styles.dot, { backgroundColor: kz.color }]} />
+                <Text style={styles.rowLabel}>{kz.name}</Text>
               </View>
               <View style={styles.rowRight}>
                 <Text style={styles.rowStat}>{stats.total} trades</Text>

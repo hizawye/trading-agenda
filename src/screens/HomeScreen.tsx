@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { useTradeStore } from '../stores/tradeStore';
 import { useAlertStore } from '../stores/alertStore';
 import { getCurrentSession, SESSIONS } from '../constants/sessions';
-import { formatTime, getTimeUntil, getNYTime } from '../lib/utils';
+import { getCurrentKillzone } from '../constants/killzones';
+import { formatTime, getTimeUntil, getNYTime, formatTimeRange } from '../lib/utils';
 
 export default function HomeScreen({ navigation }: any) {
   const { trades, loadTrades, getTodayTrades, getTodayPnL, getWinRate } = useTradeStore();
@@ -19,6 +20,7 @@ export default function HomeScreen({ navigation }: any) {
   }, []);
 
   const currentSession = getCurrentSession();
+  const currentKillzone = getCurrentKillzone();
   const nextAlert = getNextAlert();
   const todayTrades = getTodayTrades();
   const todayPnL = getTodayPnL();
@@ -32,9 +34,19 @@ export default function HomeScreen({ navigation }: any) {
       <View style={styles.sessionCard}>
         <Text style={styles.sectionTitle}>Current Session</Text>
         {currentSession ? (
-          <View style={[styles.sessionBadge, { backgroundColor: currentSession.color }]}>
-            <Text style={styles.sessionText}>{currentSession.name}</Text>
-          </View>
+          <>
+            <View style={[styles.sessionBadge, { backgroundColor: currentSession.color }]}>
+              <Text style={styles.sessionText}>{currentSession.name}</Text>
+            </View>
+            {currentKillzone && (
+              <>
+                <Text style={styles.killzoneName}>{currentKillzone.name}</Text>
+                <Text style={styles.killzoneTime}>
+                  {formatTimeRange(currentKillzone.times)}
+                </Text>
+              </>
+            )}
+          </>
         ) : (
           <Text style={styles.offHours}>Off-hours</Text>
         )}
@@ -151,6 +163,17 @@ const styles = StyleSheet.create({
     color: '#64748B',
     fontSize: 24,
     marginBottom: 8,
+  },
+  killzoneName: {
+    color: '#F1F5F9',
+    fontSize: 16,
+    fontWeight: '500',
+    marginTop: 8,
+  },
+  killzoneTime: {
+    color: '#94A3B8',
+    fontSize: 14,
+    marginTop: 4,
   },
   currentTime: {
     color: '#F1F5F9',
