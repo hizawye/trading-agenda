@@ -1,5 +1,19 @@
 export type Session = 'asia' | 'london' | 'ny_am' | 'ny_pm';
 
+export type Killzone =
+  | 'asia_kz'
+  | 'london_kz'
+  | 'ny_am_kz'
+  | 'ny_lunch'
+  | 'ny_pm_kz';
+
+export interface TimeRange {
+  startHour: number; // 0-23
+  startMinute: number; // 0-59
+  endHour: number; // 0-23
+  endMinute: number; // 0-59
+}
+
 export type SetupType =
   | 'continuation'
   | 'reversal'
@@ -24,7 +38,8 @@ export interface Trade {
   id: string;
   timestamp: number; // Unix timestamp
   session: Session;
-  timeWindow: string;
+  timeWindow: string; // DEPRECATED - kept for backward compat
+  killzone?: Killzone; // NEW - preferred field
   setupType: SetupType;
   direction: TradeDirection;
   symbol: string;
@@ -64,6 +79,30 @@ export interface SessionInfo {
   id: Session;
   name: string;
   startHour: number;
+  startMinute: number;
   endHour: number;
+  endMinute: number;
   color: string;
+}
+
+export interface KillzoneInfo {
+  id: Killzone;
+  name: string;
+  description: string;
+  times: TimeRange;
+  color: string;
+  session: Session; // Parent session reference
+}
+
+export interface SessionConfig {
+  id: Session;
+  name: string;
+  times: TimeRange;
+  color: string;
+}
+
+export interface UserSettings {
+  sessions: SessionConfig[];
+  killzones: KillzoneInfo[];
+  lastModified: number;
 }
