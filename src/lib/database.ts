@@ -128,9 +128,24 @@ export const getTradeById = async (id: string): Promise<Trade | null> => {
 };
 
 const parseTrade = (row: any): Trade => ({
-  ...row,
+  id: row.id,
+  timestamp: Number(row.timestamp),
+  session: row.session,
+  timeWindow: row.timeWindow || '',
+  setupType: row.setupType,
+  direction: row.direction,
+  symbol: row.symbol || '',
+  entry: Number(row.entry) || 0,
+  stopLoss: Number(row.stopLoss) || 0,
+  takeProfit: Number(row.takeProfit) || 0,
+  outcome: row.outcome,
+  pnl: row.pnl ? Number(row.pnl) : undefined,
+  riskReward: row.riskReward ? Number(row.riskReward) : undefined,
   images: JSON.parse(row.images || '[]'),
+  notes: row.notes || '',
   confirmations: JSON.parse(row.confirmations || '[]'),
+  createdAt: Number(row.createdAt),
+  updatedAt: Number(row.updatedAt),
 });
 
 // Alert CRUD operations
@@ -172,8 +187,11 @@ export const getAllAlerts = async (): Promise<Alert[]> => {
 };
 
 const parseAlert = (row: any): Alert => ({
-  ...row,
-  enabled: Boolean(row.enabled),
+  id: row.id,
+  time: row.time,
+  label: row.label,
+  description: row.description,
+  enabled: row.enabled === 1 || row.enabled === '1' || row.enabled === true,
   days: JSON.parse(row.days || '[1,2,3,4,5]'),
 });
 
@@ -214,6 +232,9 @@ export const getAllRules = async (): Promise<Rule[]> => {
 };
 
 const parseRule = (row: any): Rule => ({
-  ...row,
-  active: Boolean(row.active),
+  id: row.id,
+  category: row.category,
+  rule: row.rule,
+  order: Number(row.order) || 0,
+  active: row.active === 1 || row.active === '1' || row.active === true,
 });
