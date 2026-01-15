@@ -8,12 +8,13 @@ import { formatTime, getTimeUntil, getNYTime, formatTimeRange } from '../lib/uti
 
 export default function HomeScreen({ navigation }: any) {
   const { trades, loadTrades, getTodayTrades, getTodayPnL, getWinRate } = useTradeStore();
-  const { loadAlerts, getNextAlert } = useAlertStore();
+  const { loadAlerts, getNextAlert, initializeNotifications } = useAlertStore();
   const [currentTime, setCurrentTime] = useState(getNYTime());
 
   useEffect(() => {
     loadTrades();
     loadAlerts();
+    initializeNotifications();
 
     const timer = setInterval(() => setCurrentTime(getNYTime()), 1000);
     return () => clearInterval(timer);

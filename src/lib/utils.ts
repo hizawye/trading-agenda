@@ -3,9 +3,30 @@ import { TimeRange } from '../types';
 // Get current date/time in New York timezone
 export const getNYTime = (): Date => {
   const now = new Date();
-  // Convert to NY time using toLocaleString
-  const nyTimeStr = now.toLocaleString('en-US', { timeZone: 'America/New_York' });
-  return new Date(nyTimeStr);
+  const options: Intl.DateTimeFormatOptions = {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric',
+    hour12: false,
+  };
+
+  const formatter = new Intl.DateTimeFormat('en-US', options);
+  const parts = formatter.formatToParts(now);
+
+  const getPart = (type: string) => parseInt(parts.find((p) => p.type === type)?.value || '0', 10);
+
+  return new Date(
+    getPart('year'),
+    getPart('month') - 1, // Month is 0-indexed
+    getPart('day'),
+    getPart('hour'),
+    getPart('minute'),
+    getPart('second')
+  );
 };
 
 // Get current NY hour (0-23)

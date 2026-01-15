@@ -1,5 +1,11 @@
 # Trading Agenda - Changelog
 
+## [0.1.1] - 2026-01-15
+
+### Fixed
+- Fixed crash in Expo Go by handling notification permission errors gracefully
+- Fixed "Invalid Date" on Home screen by robustly handling NY time calculation
+
 ## [0.1.0] - 2026-01-14
 
 ### Added

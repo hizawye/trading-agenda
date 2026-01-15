@@ -19,8 +19,13 @@ export const requestNotificationPermissions = async (): Promise<boolean> => {
     return true;
   }
 
-  const { status } = await Notifications.requestPermissionsAsync();
-  return status === 'granted';
+  try {
+    const { status } = await Notifications.requestPermissionsAsync();
+    return status === 'granted';
+  } catch (error) {
+    console.warn('Failed to request notification permissions:', error);
+    return false;
+  }
 };
 
 export const scheduleAlertNotification = async (alert: Alert): Promise<string | null> => {

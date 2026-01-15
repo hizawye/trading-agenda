@@ -9,7 +9,10 @@ import {
   TextInput,
   ScrollView,
   Alert,
+  Image,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { Paths, File as ExpoFile } from 'expo-file-system';
 import { useTradeStore } from '../stores/tradeStore';
 import { Trade, Session, SetupType, TradeDirection, TradeOutcome, Confirmation, Killzone } from '../types';
 import { getSessionById, getCurrentSession, SESSIONS } from '../constants/sessions';
@@ -39,6 +42,7 @@ export default function JournalScreen() {
   const [pnl, setPnl] = useState('');
   const [notes, setNotes] = useState('');
   const [confirmations, setConfirmations] = useState<Confirmation[]>([]);
+  const [images, setImages] = useState<string[]>([]);
 
   useEffect(() => {
     loadTrades();
@@ -61,6 +65,7 @@ export default function JournalScreen() {
     setPnl('');
     setNotes('');
     setConfirmations([]);
+    setImages([]);
     setEditingTrade(null);
   };
 
@@ -84,6 +89,7 @@ export default function JournalScreen() {
     setPnl(trade.pnl?.toString() || '');
     setNotes(trade.notes);
     setConfirmations(trade.confirmations);
+    setImages(trade.images || []);
     setModalVisible(true);
   };
 
@@ -107,7 +113,7 @@ export default function JournalScreen() {
       outcome,
       pnl: pnl ? parseFloat(pnl) : undefined,
       riskReward: rr,
-      images: editingTrade?.images || [],
+      images,
       notes,
       confirmations,
     };
@@ -133,6 +139,43 @@ export default function JournalScreen() {
     setConfirmations((prev) =>
       prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]
     );
+  };
+
+  const pickImage = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permissionResult.granted) {
+      Alert.alert('Permission Required', 'Please allow access to your photo library.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const uri = result.assets[0].uri;
+      // Copy to app's document directory for persistence
+      const filename = `trade_${Date.now()}.jpg`;
+
+      try {
+        const sourceFile = new ExpoFile(uri);
+        const destFile = new ExpoFile(Paths.document, filename);
+        await sourceFile.copy(destFile);
+        setImages((prev) => [...prev, destFile.uri]);
+      } catch {
+        // Fallback to using original URI if copy fails
+        setImages((prev) => [...prev, uri]);
+      }
+    }
+  };
+
+  const removeImage = (uri: string) => {
+    Alert.alert('Remove Image', 'Remove this screenshot?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Remove', style: 'destructive', onPress: () => setImages((prev) => prev.filter((img) => img !== uri)) },
+    ]);
   };
 
   const renderTrade = ({ item }: { item: Trade }) => {
@@ -371,6 +414,23 @@ export default function JournalScreen() {
             numberOfLines={4}
           />
 
+          {/* Screenshots */}
+          <Text style={styles.label}>Screenshots</Text>
+          <View style={styles.imagesContainer}>
+            {images.map((uri, index) => (
+              <TouchableOpacity key={index} onPress={() => removeImage(uri)} style={styles.imageWrapper}>
+                <Image source={{ uri }} style={styles.thumbnail} />
+                <View style={styles.removeImageBadge}>
+                  <Text style={styles.removeImageText}>×</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity style={styles.addImageBtn} onPress={pickImage}>
+              <Text style={styles.addImageText}>+</Text>
+              <Text style={styles.addImageLabel}>Add</Text>
+            </TouchableOpacity>
+          </View>
+
           {editingTrade && (
             <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(editingTrade.id)}>
               <Text style={styles.deleteText}>Delete Trade</Text>
@@ -506,4 +566,58 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   deleteText: { color: '#FCA5A5', fontSize: 16 },
+
+  // Image picker styles
+  imagesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  imageWrapper: {
+    position: 'relative',
+  },
+  thumbnail: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    backgroundColor: '#334155',
+  },
+  removeImageBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#EF4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removeImageText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: -2,
+  },
+  addImageBtn: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    backgroundColor: '#334155',
+    borderWidth: 2,
+    borderColor: '#475569',
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addImageText: {
+    color: '#94A3B8',
+    fontSize: 28,
+    marginTop: -4,
+  },
+  addImageLabel: {
+    color: '#64748B',
+    fontSize: 11,
+    marginTop: 2,
+  },
 });

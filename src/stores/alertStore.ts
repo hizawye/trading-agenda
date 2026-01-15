@@ -3,10 +3,17 @@ import { Alert } from '../types';
 import * as db from '../lib/database';
 import { DEFAULT_ALERTS } from '../constants/defaultAlerts';
 import { generateId } from '../lib/utils';
+import {
+  scheduleAlertNotification,
+  cancelAlertNotification,
+  scheduleAllAlerts,
+  requestNotificationPermissions,
+} from '../lib/notifications';
 
 interface AlertState {
   alerts: Alert[];
   loading: boolean;
+  notificationsEnabled: boolean;
 
   loadAlerts: () => Promise<void>;
   addAlert: (alert: Omit<Alert, 'id'>) => Promise<Alert>;
@@ -15,11 +22,22 @@ interface AlertState {
   deleteAlert: (id: string) => Promise<void>;
   seedDefaultAlerts: () => Promise<void>;
   getNextAlert: () => Alert | null;
+  initializeNotifications: () => Promise<void>;
 }
 
 export const useAlertStore = create<AlertState>((set, get) => ({
   alerts: [],
   loading: false,
+  notificationsEnabled: false,
+
+  initializeNotifications: async () => {
+    const granted = await requestNotificationPermissions();
+    set({ notificationsEnabled: granted });
+    if (granted) {
+      const { alerts } = get();
+      await scheduleAllAlerts(alerts);
+    }
+  },
 
   loadAlerts: async () => {
     set({ loading: true });
@@ -33,6 +51,11 @@ export const useAlertStore = create<AlertState>((set, get) => ({
       }
 
       set({ alerts, loading: false });
+
+      // Schedule notifications after loading
+      if (get().notificationsEnabled) {
+        await scheduleAllAlerts(alerts);
+      }
     } catch {
       set({ loading: false });
     }
@@ -45,6 +68,12 @@ export const useAlertStore = create<AlertState>((set, get) => ({
     };
     await db.insertAlert(alert);
     set((state) => ({ alerts: [...state.alerts, alert].sort((a, b) => a.time.localeCompare(b.time)) }));
+
+    // Schedule notification for new alert
+    if (get().notificationsEnabled) {
+      await scheduleAlertNotification(alert);
+    }
+
     return alert;
   },
 
@@ -53,6 +82,11 @@ export const useAlertStore = create<AlertState>((set, get) => ({
     set((state) => ({
       alerts: state.alerts.map((a) => (a.id === alert.id ? alert : a)),
     }));
+
+    // Reschedule notification
+    if (get().notificationsEnabled) {
+      await scheduleAlertNotification(alert);
+    }
   },
 
   toggleAlert: async (id) => {
@@ -64,6 +98,11 @@ export const useAlertStore = create<AlertState>((set, get) => ({
   },
 
   deleteAlert: async (id) => {
+    // Cancel notification before deleting
+    if (get().notificationsEnabled) {
+      await cancelAlertNotification(id);
+    }
+
     await db.deleteAlert(id);
     set((state) => ({
       alerts: state.alerts.filter((a) => a.id !== id),
