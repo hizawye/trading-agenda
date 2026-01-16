@@ -165,3 +165,51 @@
 - Forced checklist would reintroduce friction removed in Phase 2
 - Trust user to self-enforce after being reminded
 - Can revisit with opt-in "strict mode" if users request
+
+## 2026-01-16: Beta Prep Decisions (Phase 5)
+
+### Asset Optimization Strategy
+**Decision:** Resize icons from 2048x2048 to 1024x1024 and apply aggressive PNG compression
+**Rationale:**
+- icon.png and splash-icon.png were 5.6M and 5.1M respectively (~11MB total)
+- Expo's recommended icon size is 1024x1024, not 2048x2048
+- Resizing + color quantization (256 colors) reduced to 285KB and 240KB (98% size reduction)
+- Saved ~10MB in app bundle size
+- Quality degradation negligible for app icons at typical display sizes
+
+### Sentry for Crash Reporting
+**Decision:** Use Sentry (via sentry-expo) instead of Crashlytics or other solutions
+**Rationale:**
+- Native Expo integration with sentry-expo package
+- Free tier sufficient for beta testing (<5k events/month)
+- Better error context than bare try/catch logging
+- Can catch JavaScript errors and native crashes
+- Privacy-friendly: no user data sent, only error context
+
+### Structured Logger Pattern
+**Decision:** Create logger abstraction (src/lib/logger.ts) instead of direct Sentry calls
+**Rationale:**
+- Centralized error handling logic
+- Easy to swap Sentry for different service later
+- Console logs in dev, Sentry in production
+- Consistent error format across codebase
+- Replaced 5 console.error calls in stores/database with logger.error
+
+### Privacy Policy Approach
+**Decision:** Document local-only storage, no cloud sync, no analytics in privacy-policy.md
+**Rationale:**
+- Required for Google Play Store distribution
+- User requested no cloud sync in initial requirements
+- Transparency about Sentry crash reporting
+- Clarifies camera/photo permissions are for screenshots only, not uploaded
+- Emphasizes user control over data (delete = uninstall)
+
+### Permissions Configuration
+**Decision:** Add explicit permissions to app.json plugins and android.permissions
+**Rationale:**
+- expo-image-picker needs camera + photo library permissions
+- expo-notifications needs POST_NOTIFICATIONS + SCHEDULE_EXACT_ALARM
+- Android 13+ requires runtime permission prompts with clear messaging
+- Configured permission messages explain "for trade screenshots" use case
+- Better to declare explicitly than rely on auto-linking inference
+

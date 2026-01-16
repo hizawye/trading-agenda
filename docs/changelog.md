@@ -1,5 +1,22 @@
 # Trading Agenda - Changelog
 
+## [0.3.0] - 2026-01-16 (Beta Prep)
+
+### Added
+- Sentry crash reporting integration for production monitoring
+- Structured logger (src/lib/logger.ts) with Sentry integration
+- Privacy policy documenting local-only data storage
+- Explicit permissions configuration for camera, photo library, and notifications
+- Permission messages explaining screenshot use case
+
+### Changed
+- Optimized assets: icon.png (5.6M → 285KB) and splash-icon.png (5.1M → 240KB) - saved ~10MB
+- Replaced all console.error calls with structured logger in stores and database
+- App bundle size reduced by ~10MB
+
+### Fixed
+- Type check now passing (npx tsc --noEmit)
+
 ## [0.2.0] - 2026-01-16
 
 ### Added

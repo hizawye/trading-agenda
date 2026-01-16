@@ -1,7 +1,7 @@
 # Trading Agenda - Project Status
 
 ## Current State
-**Phase:** UX Redesign Complete (Phases 1-4) ✅
+**Phase:** Beta Prep Complete - Ready for Preview Build ✅
 **Last Updated:** 2026-01-16
 
 ## What's Done
@@ -48,6 +48,13 @@
 - Notification system setup
 - NY timezone implementation (EST/EDT)
 - EAS Build configuration ready
+- **Beta Prep (Phase 5):**
+  - Asset optimization: icon.png (5.6M → 285KB), splash-icon.png (5.1M → 240KB) - saved ~10MB
+  - Permissions configured: camera, photo library, notifications, exact alarms
+  - Sentry crash reporting integration with structured logger
+  - Privacy policy created (local-only data storage)
+  - Type check passing
+  - All console.error replaced with logger.error
 
 ## What's Not Done Yet
 - [ ] Image annotation/drawing on trade screenshots
@@ -59,8 +66,8 @@
 - None currently identified
 
 ## Where to Start Next
-1. Add image annotation to trade screenshots
-2. Implement export/import functionality
-3. Add calendar heat map to analytics
-4. Test on real device
-5. Performance testing with larger datasets
+1. **Configure Sentry:** Add your Sentry DSN to App.tsx and update sentry.properties
+2. **Preview Build:** Run `eas build --profile preview --platform android`
+3. **Device Testing:** Test APK on physical device (notifications, permissions, camera, SQLite)
+4. **Production Build:** Run `eas build --profile production --platform android`
+5. **Beta Distribution:** Share APK with beta testers
