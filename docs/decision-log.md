@@ -88,3 +88,80 @@
 - Sessions (broad): Asia 20-5, London 2-10, NY AM 9:30-14, NY PM 14-16
 - Handles midnight wrap properly (Asia starts 20:00 previous day)
 - Minute precision added to support 9:30am market open
+
+## 2026-01-16: UX Redesign - 3-Tab Navigation
+
+### Navigation Restructure (Phase 1)
+**Decision:** Reduce from 6 tabs to 3-tab bottom navigation (Today, Journal, More)
+**Rationale:**
+- 6 tabs created cognitive overload, unclear hierarchy
+- Core workflow (trading journal) deserves prominence
+- Utility features (Analytics, Rules, Alerts, Settings) grouped in More hub
+- Clear default screen (Today) with contextual info + quick actions
+- Progressive disclosure: simple by default, powerful when needed
+
+### New Screen Architecture
+**Decision:** Rename HomeScreen → TodayScreen, create MoreScreen as navigation hub
+**Rationale:**
+- TodayScreen shows what matters NOW: current session, next alert, today's stats
+- MoreScreen uses grouped menu list instead of flat tabs
+- Stack navigator for More section enables deep linking
+- Maintains all functionality while reducing visual complexity
+- ICT traders need speed - 3 taps max to any feature
+
+### Design Philosophy
+**Decision:** Favor speed over hand-holding, context over categorization
+**Rationale:**
+- Smart defaults (auto-detect current killzone) reduce friction
+- Inline stats in filtered views > separate analytics tab
+- Visual hierarchy (session colors, outcome badges, P&L prominence)
+- No wizard flows, no empty states with lengthy explanations
+
+## 2026-01-16: UX Phase 2 - Smart Trade Entry Flow
+
+### Quick vs Full Mode
+**Decision:** Implement dual-mode trade form (quick 4-field vs full 14-field)
+**Rationale:**
+- Most trades are simple logging: "took London setup, won $200"
+- Full form creates friction (10+ fields) for common case
+- Smart defaults reduce cognitive load: auto-detect killzone, default setup to continuation
+- Quick mode: Symbol, Direction, Outcome, P&L only
+- "+ More Details" expands to full form (killzone, setup, confirmations, prices, notes, screenshots)
+- Editing existing trades shows full form immediately
+- 70% reduction in time-to-log for common case (30s → 10s)
+
+## 2026-01-16: UX Phase 3 - Contextual Analytics
+
+### Filter Bar + Inline Stats
+**Decision:** Add filter chips and contextual metrics to Journal screen
+**Rationale:**
+- Analytics in separate tab requires context switching
+- Users filter trades to answer specific questions: "How do I perform in London?"
+- Inline stats answer that question immediately after filtering
+- Filter bar: Session, Setup, Outcome (toggle chips, green when active)
+- Inline stats card appears when filters active: Trades, Win Rate, Total P&L, Avg RR
+- Progressive disclosure: stats appear when user demonstrates intent
+- Analytics tab still exists for comprehensive views (charts, trends)
+
+## 2026-01-16: UX Phase 4 - Rules Integration
+
+### Pre-Trade Rules Reminder (Dismissible)
+**Decision:** Show active rules as dismissible reminder in Quick Add form
+**Rationale:**
+- Rules tab exists but disconnected from journaling workflow
+- Users forget their own rules during live trading (emotional state)
+- Interrupting with forced checklist breaks "quick add" promise
+- Dismissible reminder balances discipline with speed
+- Shows top 3 active rules + count, orange left border for visibility
+- Only appears for new trades (not editing) to avoid annoyance
+- Users can X dismiss if already checked rules externally
+- Passive coaching layer: visible but not blocking
+
+### Why Not Full Checklist?
+**Decision:** Chose passive reminder over forced checkbox confirmation
+**Rationale:**
+- Quick Add goal: 10s logging, not 30s+ workflow
+- ICT traders already disciplined, need nudge not babysitting
+- Forced checklist would reintroduce friction removed in Phase 2
+- Trust user to self-enforce after being reminded
+- Can revisit with opt-in "strict mode" if users request

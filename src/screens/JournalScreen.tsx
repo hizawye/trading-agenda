@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, Image } from
 import * as ImagePicker from 'expo-image-picker';
 import { Paths, File as ExpoFile } from 'expo-file-system';
 import { useTradeStore } from '../stores/tradeStore';
+import { useRuleStore } from '../stores/ruleStore';
 import { Trade, Session, SetupType, TradeDirection, TradeOutcome, Confirmation, Killzone } from '../types';
 import { getSessionById, getCurrentSession } from '../constants/sessions';
 import { DEFAULT_KILLZONES, getCurrentKillzone } from '../constants/killzones';
@@ -14,6 +15,9 @@ import { FormField, FormLabel } from '../components/FormField';
 import { OptionPicker } from '../components/OptionPicker';
 import { TradeCard } from '../components/TradeCard';
 import { FAB } from '../components/FAB';
+import { Card } from '../components/Card';
+import { Stat } from '../components/Stat';
+import { SESSIONS } from '../constants/sessions';
 
 const SETUP_TYPES: SetupType[] = ['continuation', 'reversal', 'liquidity_sweep', 'fvg_fill', 'breakout', 'other'];
 const CONFIRMATIONS: Confirmation[] = ['smt', 'mss', 'bos', 'fvg', 'swing_sweep', 'pd_array', 'time_window'];
@@ -21,8 +25,10 @@ const OUTCOMES: TradeOutcome[] = ['win', 'loss', 'breakeven', 'pending'];
 
 export default function JournalScreen() {
   const { trades, loadTrades, addTrade, updateTrade, deleteTrade } = useTradeStore();
+  const { rules, loadRules } = useRuleStore();
   const [modalVisible, setModalVisible] = useState(false);
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
+  const [showRules, setShowRules] = useState(true);
 
   // Form state
   const [session, setSession] = useState<Session>('ny_am');
@@ -39,9 +45,16 @@ export default function JournalScreen() {
   const [notes, setNotes] = useState('');
   const [confirmations, setConfirmations] = useState<Confirmation[]>([]);
   const [images, setImages] = useState<string[]>([]);
+  const [quickMode, setQuickMode] = useState(true); // Quick vs full form mode
+
+  // Filter state
+  const [filterSession, setFilterSession] = useState<Session | 'all'>('all');
+  const [filterSetup, setFilterSetup] = useState<SetupType | 'all'>('all');
+  const [filterOutcome, setFilterOutcome] = useState<TradeOutcome | 'all'>('all');
 
   useEffect(() => {
     loadTrades();
+    loadRules();
   }, []);
 
   const resetForm = () => {
@@ -62,10 +75,13 @@ export default function JournalScreen() {
     setConfirmations([]);
     setImages([]);
     setEditingTrade(null);
+    setQuickMode(true);
   };
 
   const openAddModal = () => {
     resetForm();
+    setQuickMode(true); // New trades default to quick mode
+    setShowRules(true); // Show rules reminder
     setModalVisible(true);
   };
 
@@ -85,6 +101,7 @@ export default function JournalScreen() {
     setNotes(trade.notes);
     setConfirmations(trade.confirmations);
     setImages(trade.images || []);
+    setQuickMode(false); // Editing shows full form
     setModalVisible(true);
   };
 
@@ -179,10 +196,74 @@ export default function JournalScreen() {
     ]);
   };
 
+  // Filtered trades
+  const filteredTrades = trades.filter((trade) => {
+    if (filterSession !== 'all' && trade.session !== filterSession) return false;
+    if (filterSetup !== 'all' && trade.setupType !== filterSetup) return false;
+    if (filterOutcome !== 'all' && trade.outcome !== filterOutcome) return false;
+    return true;
+  });
+
+  // Filter stats
+  const filterStats = (() => {
+    const completed = filteredTrades.filter((t) => t.outcome !== 'pending');
+    const wins = completed.filter((t) => t.outcome === 'win').length;
+    const winRate = completed.length > 0 ? (wins / completed.length) * 100 : 0;
+    const totalPnL = completed.reduce((sum, t) => sum + (t.pnl || 0), 0);
+    const avgRR = completed.length > 0
+      ? completed.reduce((sum, t) => sum + (t.riskReward || 0), 0) / completed.length
+      : 0;
+    return { trades: filteredTrades.length, winRate, totalPnL, avgRR };
+  })();
+
+  const hasActiveFilters = filterSession !== 'all' || filterSetup !== 'all' || filterOutcome !== 'all';
+
   return (
     <View style={styles.container}>
+      {/* Filter Bar */}
+      <View style={styles.filterBar}>
+        <TouchableOpacity
+          style={[styles.filterChip, filterSession !== 'all' && styles.filterChipActive]}
+          onPress={() => setFilterSession(filterSession === 'all' ? SESSIONS[0].id : 'all')}
+        >
+          <Text style={[styles.filterChipText, filterSession !== 'all' && styles.filterChipTextActive]}>
+            {filterSession === 'all' ? 'All Sessions' : SESSIONS.find(s => s.id === filterSession)?.name}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.filterChip, filterSetup !== 'all' && styles.filterChipActive]}
+          onPress={() => setFilterSetup(filterSetup === 'all' ? 'continuation' : 'all')}
+        >
+          <Text style={[styles.filterChipText, filterSetup !== 'all' && styles.filterChipTextActive]}>
+            {filterSetup === 'all' ? 'All Setups' : filterSetup.replace('_', ' ')}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.filterChip, filterOutcome !== 'all' && styles.filterChipActive]}
+          onPress={() => setFilterOutcome(filterOutcome === 'all' ? 'win' : 'all')}
+        >
+          <Text style={[styles.filterChipText, filterOutcome !== 'all' && styles.filterChipTextActive]}>
+            {filterOutcome === 'all' ? 'All Outcomes' : filterOutcome.toUpperCase()}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Inline Stats (shown when filters active) */}
+      {hasActiveFilters && filteredTrades.length > 0 && (
+        <Card>
+          <View style={styles.statsRow}>
+            <Stat value={filterStats.trades} label="Trades" />
+            <Stat value={`${filterStats.winRate.toFixed(0)}%`} label="Win Rate" />
+            <Stat value={`${filterStats.totalPnL >= 0 ? '+' : ''}${filterStats.totalPnL.toFixed(0)}`} label="P&L" />
+            <Stat value={filterStats.avgRR.toFixed(1)} label="Avg RR" />
+          </View>
+        </Card>
+      )}
+
       <FlatList
-        data={trades}
+        data={filteredTrades}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <TradeCard
@@ -205,87 +286,146 @@ export default function JournalScreen() {
 
       <FormModal
         visible={modalVisible}
-        title={editingTrade ? 'Edit Trade' : 'New Trade'}
+        title={editingTrade ? 'Edit Trade' : (quickMode ? 'Quick Add' : 'New Trade')}
         onClose={() => setModalVisible(false)}
         onSave={handleSave}
         onDelete={editingTrade ? handleDelete : undefined}
         saveDisabled={!symbol.trim() || !entry || !stopLoss || !takeProfit}
       >
-        <FormLabel>Killzone</FormLabel>
-        <OptionPicker
-          options={DEFAULT_KILLZONES.map((kz) => ({ value: kz.id, label: kz.name, color: kz.color }))}
-          selected={killzone}
-          onSelect={(kz) => {
-            setKillzone(kz);
-            const kzInfo = DEFAULT_KILLZONES.find((k) => k.id === kz);
-            if (kzInfo) setSession(kzInfo.session);
-          }}
-        />
-
-        <FormLabel>Direction</FormLabel>
-        <OptionPicker
-          options={[
-            { value: 'long' as TradeDirection, label: 'LONG', color: colors.semantic.success },
-            { value: 'short' as TradeDirection, label: 'SHORT', color: colors.semantic.error },
-          ]}
-          selected={direction}
-          onSelect={setDirection}
-        />
-
-        <FormLabel>Setup Type</FormLabel>
-        <OptionPicker
-          options={SETUP_TYPES.map((s) => ({ value: s, label: s.replace('_', ' ') }))}
-          selected={setupType}
-          onSelect={setSetupType}
-        />
-
-        <FormLabel>Confirmations</FormLabel>
-        <OptionPicker
-          options={CONFIRMATIONS.map((c) => ({ value: c, label: c.toUpperCase() }))}
-          selected={confirmations}
-          onSelect={toggleConfirmation}
-          multiple
-        />
-
-        <FormField label="Symbol" value={symbol} onChangeText={setSymbol} placeholder="ES, NQ, BTC..." />
-
-        <View style={styles.priceRow}>
-          <View style={styles.priceField}>
-            <FormField label="Entry" value={entry} onChangeText={setEntry} keyboardType="decimal-pad" placeholder="0.00" />
+        {/* Pre-Trade Rules Reminder (dismissible) */}
+        {!editingTrade && showRules && rules.filter(r => r.active).length > 0 && (
+          <View style={styles.rulesReminder}>
+            <View style={styles.rulesHeader}>
+              <Text style={styles.rulesTitle}>📋 Active Rules ({rules.filter(r => r.active).length})</Text>
+              <TouchableOpacity onPress={() => setShowRules(false)}>
+                <Text style={styles.rulesDismiss}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.rulesList}>
+              {rules.filter(r => r.active).slice(0, 3).map((rule) => (
+                <Text key={rule.id} style={styles.ruleItem}>• {rule.rule}</Text>
+              ))}
+              {rules.filter(r => r.active).length > 3 && (
+                <Text style={styles.rulesMore}>+{rules.filter(r => r.active).length - 3} more...</Text>
+              )}
+            </View>
           </View>
-          <View style={styles.priceField}>
-            <FormField label="Stop Loss" value={stopLoss} onChangeText={setStopLoss} keyboardType="decimal-pad" placeholder="0.00" />
-          </View>
-          <View style={styles.priceField}>
-            <FormField label="Take Profit" value={takeProfit} onChangeText={setTakeProfit} keyboardType="decimal-pad" placeholder="0.00" />
-          </View>
-        </View>
+        )}
 
-        <FormLabel>Outcome</FormLabel>
-        <OptionPicker
-          options={OUTCOMES.map((o) => ({ value: o, label: o.toUpperCase(), color: outcomeColor(o) }))}
-          selected={outcome}
-          onSelect={setOutcome}
-        />
+        {quickMode && !editingTrade ? (
+          <>
+            {/* Quick Mode: Essential fields only */}
+            <FormField label="Symbol" value={symbol} onChangeText={setSymbol} placeholder="ES, NQ, BTC..." />
 
-        <FormField label="P&L (optional)" value={pnl} onChangeText={setPnl} keyboardType="decimal-pad" placeholder="0.00" />
+            <FormLabel>Direction</FormLabel>
+            <OptionPicker
+              options={[
+                { value: 'long' as TradeDirection, label: 'LONG', color: colors.semantic.success },
+                { value: 'short' as TradeDirection, label: 'SHORT', color: colors.semantic.error },
+              ]}
+              selected={direction}
+              onSelect={setDirection}
+            />
 
-        <FormField label="Notes" value={notes} onChangeText={setNotes} placeholder="Trade notes..." multiline />
+            <FormLabel>Outcome</FormLabel>
+            <OptionPicker
+              options={OUTCOMES.map((o) => ({ value: o, label: o.toUpperCase(), color: outcomeColor(o) }))}
+              selected={outcome}
+              onSelect={setOutcome}
+            />
 
-        <FormLabel>Screenshots</FormLabel>
-        <View style={styles.imagesContainer}>
-          {images.map((uri, index) => (
-            <TouchableOpacity key={index} onPress={() => removeImage(uri)} style={styles.imageWrapper}>
-              <Image source={{ uri }} style={styles.thumbnail} />
-              <View style={styles.removeImageBadge}>
-                <Text style={styles.removeImageText}>×</Text>
-              </View>
+            <FormField label="P&L" value={pnl} onChangeText={setPnl} keyboardType="decimal-pad" placeholder="0.00" />
+
+            <TouchableOpacity style={styles.moreDetailsBtn} onPress={() => setQuickMode(false)}>
+              <Text style={styles.moreDetailsText}>+ More Details</Text>
             </TouchableOpacity>
-          ))}
-          <TouchableOpacity style={styles.addImageBtn} onPress={pickImage}>
-            <Text style={styles.addImageText}>+</Text>
-          </TouchableOpacity>
-        </View>
+          </>
+        ) : (
+          <>
+            {/* Full Mode: All fields */}
+            {!editingTrade && (
+              <TouchableOpacity style={styles.quickModeBtn} onPress={() => setQuickMode(true)}>
+                <Text style={styles.quickModeText}>← Quick Add</Text>
+              </TouchableOpacity>
+            )}
+
+            <FormLabel>Killzone</FormLabel>
+            <OptionPicker
+              options={DEFAULT_KILLZONES.map((kz) => ({ value: kz.id, label: kz.name, color: kz.color }))}
+              selected={killzone}
+              onSelect={(kz) => {
+                setKillzone(kz);
+                const kzInfo = DEFAULT_KILLZONES.find((k) => k.id === kz);
+                if (kzInfo) setSession(kzInfo.session);
+              }}
+            />
+
+            <FormLabel>Direction</FormLabel>
+            <OptionPicker
+              options={[
+                { value: 'long' as TradeDirection, label: 'LONG', color: colors.semantic.success },
+                { value: 'short' as TradeDirection, label: 'SHORT', color: colors.semantic.error },
+              ]}
+              selected={direction}
+              onSelect={setDirection}
+            />
+
+            <FormLabel>Setup Type</FormLabel>
+            <OptionPicker
+              options={SETUP_TYPES.map((s) => ({ value: s, label: s.replace('_', ' ') }))}
+              selected={setupType}
+              onSelect={setSetupType}
+            />
+
+            <FormLabel>Confirmations</FormLabel>
+            <OptionPicker
+              options={CONFIRMATIONS.map((c) => ({ value: c, label: c.toUpperCase() }))}
+              selected={confirmations}
+              onSelect={toggleConfirmation}
+              multiple
+            />
+
+            <FormField label="Symbol" value={symbol} onChangeText={setSymbol} placeholder="ES, NQ, BTC..." />
+
+            <View style={styles.priceRow}>
+              <View style={styles.priceField}>
+                <FormField label="Entry" value={entry} onChangeText={setEntry} keyboardType="decimal-pad" placeholder="0.00" />
+              </View>
+              <View style={styles.priceField}>
+                <FormField label="Stop Loss" value={stopLoss} onChangeText={setStopLoss} keyboardType="decimal-pad" placeholder="0.00" />
+              </View>
+              <View style={styles.priceField}>
+                <FormField label="Take Profit" value={takeProfit} onChangeText={setTakeProfit} keyboardType="decimal-pad" placeholder="0.00" />
+              </View>
+            </View>
+
+            <FormLabel>Outcome</FormLabel>
+            <OptionPicker
+              options={OUTCOMES.map((o) => ({ value: o, label: o.toUpperCase(), color: outcomeColor(o) }))}
+              selected={outcome}
+              onSelect={setOutcome}
+            />
+
+            <FormField label="P&L (optional)" value={pnl} onChangeText={setPnl} keyboardType="decimal-pad" placeholder="0.00" />
+
+            <FormField label="Notes" value={notes} onChangeText={setNotes} placeholder="Trade notes..." multiline />
+
+            <FormLabel>Screenshots</FormLabel>
+            <View style={styles.imagesContainer}>
+              {images.map((uri, index) => (
+                <TouchableOpacity key={index} onPress={() => removeImage(uri)} style={styles.imageWrapper}>
+                  <Image source={{ uri }} style={styles.thumbnail} />
+                  <View style={styles.removeImageBadge}>
+                    <Text style={styles.removeImageText}>×</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity style={styles.addImageBtn} onPress={pickImage}>
+                <Text style={styles.addImageText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
       </FormModal>
     </View>
   );
@@ -293,6 +433,38 @@ export default function JournalScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg.primary },
+  filterBar: {
+    flexDirection: 'row',
+    padding: spacing.sm,
+    gap: spacing.sm,
+    backgroundColor: colors.bg.secondary,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.bg.tertiary,
+  },
+  filterChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.bg.tertiary,
+    borderRadius: radii.full,
+    borderWidth: 1,
+    borderColor: colors.text.tertiary,
+  },
+  filterChipActive: {
+    backgroundColor: colors.semantic.success,
+    borderColor: colors.semantic.success,
+  },
+  filterChipText: {
+    ...typography.caption,
+    fontWeight: '600',
+    color: colors.text.secondary,
+  },
+  filterChipTextActive: {
+    color: '#FFF',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
   list: { padding: spacing.md },
   empty: { alignItems: 'center', marginTop: 100 },
   emptyText: { ...typography.body, color: colors.text.primary },
@@ -326,4 +498,61 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   addImageText: { color: colors.text.secondary, fontSize: 28 },
+  moreDetailsBtn: {
+    marginTop: spacing.md,
+    padding: spacing.md,
+    backgroundColor: colors.bg.tertiary,
+    borderRadius: radii.md,
+    alignItems: 'center',
+  },
+  moreDetailsText: {
+    ...typography.body,
+    color: colors.semantic.success,
+    fontWeight: '600',
+  },
+  quickModeBtn: {
+    marginBottom: spacing.sm,
+    padding: spacing.sm,
+    alignItems: 'flex-start',
+  },
+  quickModeText: {
+    ...typography.caption,
+    color: colors.semantic.success,
+    fontWeight: '600',
+  },
+  rulesReminder: {
+    backgroundColor: colors.bg.tertiary,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.semantic.warning,
+  },
+  rulesHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  rulesTitle: {
+    ...typography.body,
+    fontWeight: '600',
+    color: colors.text.primary,
+  },
+  rulesDismiss: {
+    ...typography.title,
+    color: colors.text.tertiary,
+  },
+  rulesList: {
+    gap: spacing.xs,
+  },
+  ruleItem: {
+    ...typography.caption,
+    color: colors.text.secondary,
+  },
+  rulesMore: {
+    ...typography.caption,
+    color: colors.text.tertiary,
+    fontStyle: 'italic',
+  },
 });
