@@ -122,6 +122,7 @@ export default function RulesScreen() {
         onClose={() => setModalVisible(false)}
         onSave={handleSave}
         onDelete={editingRule ? handleDelete : undefined}
+        saveDisabled={!ruleText.trim()}
       >
         <FormLabel>Category</FormLabel>
         <OptionPicker

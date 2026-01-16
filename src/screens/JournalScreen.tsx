@@ -209,6 +209,7 @@ export default function JournalScreen() {
         onClose={() => setModalVisible(false)}
         onSave={handleSave}
         onDelete={editingTrade ? handleDelete : undefined}
+        saveDisabled={!symbol.trim() || !entry || !stopLoss || !takeProfit}
       >
         <FormLabel>Killzone</FormLabel>
         <OptionPicker

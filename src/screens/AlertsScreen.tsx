@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Switch, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Switch, TouchableOpacity, Platform } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useAlertStore } from '../stores/alertStore';
 import { Alert } from '../types';
 import { formatTime } from '../lib/utils';
@@ -15,17 +16,20 @@ export default function AlertsScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingAlert, setEditingAlert] = useState<Alert | null>(null);
 
-  const [time, setTime] = useState('07:30');
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [label, setLabel] = useState('');
   const [description, setDescription] = useState('');
   const [days, setDays] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [showPicker, setShowPicker] = useState(false);
 
   useEffect(() => {
     loadAlerts();
   }, []);
 
   const resetForm = () => {
-    setTime('07:30');
+    const defaultTime = new Date();
+    defaultTime.setHours(7, 30, 0, 0);
+    setSelectedDate(defaultTime);
     setLabel('');
     setDescription('');
     setDays([1, 2, 3, 4, 5]);
@@ -39,7 +43,10 @@ export default function AlertsScreen() {
 
   const openEditModal = (alert: Alert) => {
     setEditingAlert(alert);
-    setTime(alert.time);
+    const [hours, minutes] = alert.time.split(':').map(Number);
+    const date = new Date();
+    date.setHours(hours, minutes, 0, 0);
+    setSelectedDate(date);
     setLabel(alert.label);
     setDescription(alert.description || '');
     setDays(alert.days);
@@ -47,6 +54,10 @@ export default function AlertsScreen() {
   };
 
   const handleSave = async () => {
+    const hours = selectedDate.getHours().toString().padStart(2, '0');
+    const minutes = selectedDate.getMinutes().toString().padStart(2, '0');
+    const time = `${hours}:${minutes}`;
+
     const alertData = { time, label, description, days, enabled: true };
 
     if (editingAlert) {
@@ -113,13 +124,30 @@ export default function AlertsScreen() {
         onClose={() => setModalVisible(false)}
         onSave={handleSave}
         onDelete={editingAlert ? handleDelete : undefined}
+        saveDisabled={!label.trim() || days.length === 0}
       >
-        <FormField
-          label="Time (24h format)"
-          value={time}
-          onChangeText={setTime}
-          placeholder="07:30"
-        />
+        <FormLabel>Time</FormLabel>
+        <TouchableOpacity
+          style={styles.timePickerButton}
+          onPress={() => setShowPicker(true)}
+        >
+          <Text style={styles.timePickerText}>
+            {selectedDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
+          </Text>
+        </TouchableOpacity>
+
+        {showPicker && (
+          <DateTimePicker
+            value={selectedDate}
+            mode="time"
+            is24Hour={true}
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            onChange={(_event, date) => {
+              setShowPicker(Platform.OS === 'ios');
+              if (date) setSelectedDate(date);
+            }}
+          />
+        )}
 
         <FormField
           label="Label"
@@ -214,5 +242,18 @@ const styles = StyleSheet.create({
   },
   dayBtnTextActive: {
     color: '#FFF',
+  },
+  timePickerButton: {
+    backgroundColor: colors.bg.tertiary,
+    borderRadius: radii.sm,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  timePickerText: {
+    ...typography.body,
+    textAlign: 'center',
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: colors.semantic.success,
   },
 });

@@ -10,7 +10,7 @@ import type {
 // IMPORTANT: Replace this with your deployed proxy URL after deployment
 // For local testing: http://localhost:3000
 // For production: https://your-app.vercel.app or https://your-app.railway.app
-const PROXY_URL = 'https://trading-agenda-production.up.railway.app';
+const PROXY_URL = 'https://1a4ddac4e387.ngrok-free.app';
 
 class MatchTraderAPI {
   private tokens: BrokerTokens | null = null;

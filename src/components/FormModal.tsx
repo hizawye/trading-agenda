@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, typography, spacing, radii } from '../design/tokens';
 
 interface FormModalProps {
@@ -32,38 +33,40 @@ export function FormModal({
 }: FormModalProps) {
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Text style={styles.cancelBtn}>Cancel</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>{title}</Text>
-          <TouchableOpacity
-            onPress={onSave}
-            disabled={saveDisabled}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Text style={[styles.saveBtn, saveDisabled && styles.saveBtnDisabled]}>Save</Text>
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView
-          style={styles.content}
-          contentContainerStyle={styles.contentContainer}
-          keyboardShouldPersistTaps="handled"
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <KeyboardAvoidingView
+          style={styles.keyboardView}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          {children}
-
-          {onDelete && (
-            <TouchableOpacity style={styles.deleteBtn} onPress={onDelete}>
-              <Text style={styles.deleteText}>Delete</Text>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <Text style={styles.cancelBtn}>Cancel</Text>
             </TouchableOpacity>
-          )}
-        </ScrollView>
-      </KeyboardAvoidingView>
+            <Text style={styles.title}>{title}</Text>
+            <TouchableOpacity
+              onPress={onSave}
+              disabled={saveDisabled}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Text style={[styles.saveBtn, saveDisabled && styles.saveBtnDisabled]}>Save</Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            style={styles.content}
+            contentContainerStyle={styles.contentContainer}
+            keyboardShouldPersistTaps="handled"
+          >
+            {children}
+
+            {onDelete && (
+              <TouchableOpacity style={styles.deleteBtn} onPress={onDelete}>
+                <Text style={styles.deleteText}>Delete</Text>
+              </TouchableOpacity>
+            )}
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </Modal>
   );
 }
@@ -72,6 +75,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.bg.primary,
+  },
+  keyboardView: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
