@@ -10,7 +10,7 @@ import type {
 // IMPORTANT: Replace this with your deployed proxy URL after deployment
 // For local testing: http://localhost:3000
 // For production: https://your-app.vercel.app or https://your-app.railway.app
-const PROXY_URL = 'http://localhost:3000'; // TODO: Update after deployment
+const PROXY_URL = 'https://trading-agenda-production.up.railway.app';
 
 class MatchTraderAPI {
   private tokens: BrokerTokens | null = null;
@@ -18,6 +18,10 @@ class MatchTraderAPI {
   // Authentication
   async login(credentials: BrokerCredentials): Promise<BrokerTokens> {
     try {
+      // Add timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
       const response = await fetch(`${PROXY_URL}/api/login`, {
         method: 'POST',
         headers: {
@@ -29,7 +33,10 @@ class MatchTraderAPI {
           password: credentials.password,
           partnerId: credentials.brokerId || '117',
         }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       // Try to parse as JSON regardless of content-type
       let data;

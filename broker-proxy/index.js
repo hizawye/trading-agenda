@@ -24,20 +24,27 @@ app.post('/api/login', async (req, res) => {
 
     console.log('Login request:', { email, partnerId });
 
-    const response = await cloudscraper({
-      method: 'POST',
-      url: `${MAVEN_API}/mtr-core-edge/login`,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify({
-        email,
-        password,
-        partnerId: parseInt(partnerId || '117', 10),
+    // Set timeout for cloudscraper
+    const response = await Promise.race([
+      cloudscraper({
+        method: 'POST',
+        url: `${MAVEN_API}/mtr-core-edge/login`,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          partnerId: parseInt(partnerId || '117', 10),
+        }),
+        json: true,
+        timeout: 25000, // 25 second timeout
       }),
-      json: true,
-    });
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Request timeout - Cloudflare challenge may be too complex')), 25000)
+      )
+    ]);
 
     console.log('Login successful');
     res.json(response);
@@ -45,7 +52,7 @@ app.post('/api/login', async (req, res) => {
     console.error('Login error:', error.message);
     res.status(500).json({
       error: error.message,
-      details: error.error ? error.error.substring(0, 200) : 'No details'
+      details: error.error ? error.error.substring(0, 200) : 'Cloudflare may be blocking the request'
     });
   }
 });
