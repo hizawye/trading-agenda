@@ -9,6 +9,7 @@ import AnalyticsScreen from '../screens/AnalyticsScreen';
 import AlertsScreen from '../screens/AlertsScreen';
 import RulesScreen from '../screens/RulesScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import BrokerScreen from '../screens/BrokerScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -75,6 +76,13 @@ export default function Navigation() {
           component={RulesScreen}
           options={{
             tabBarIcon: ({ focused }) => <TabIcon name="📋" focused={focused} />,
+          }}
+        />
+        <Tab.Screen
+          name="Broker"
+          component={BrokerScreen}
+          options={{
+            tabBarIcon: ({ focused }) => <TabIcon name="🔗" focused={focused} />,
           }}
         />
         <Tab.Screen
