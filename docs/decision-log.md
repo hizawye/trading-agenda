@@ -88,3 +88,31 @@
 - Sessions (broad): Asia 20-5, London 2-10, NY AM 9:30-14, NY PM 14-16
 - Handles midnight wrap properly (Asia starts 20:00 previous day)
 - Minute precision added to support 9:30am market open
+
+## 2026-01-16: UX Redesign - 3-Tab Navigation
+
+### Navigation Restructure (Phase 1)
+**Decision:** Reduce from 6 tabs to 3-tab bottom navigation (Today, Journal, More)
+**Rationale:**
+- 6 tabs created cognitive overload, unclear hierarchy
+- Core workflow (trading journal) deserves prominence
+- Utility features (Analytics, Rules, Alerts, Settings) grouped in More hub
+- Clear default screen (Today) with contextual info + quick actions
+- Progressive disclosure: simple by default, powerful when needed
+
+### New Screen Architecture
+**Decision:** Rename HomeScreen → TodayScreen, create MoreScreen as navigation hub
+**Rationale:**
+- TodayScreen shows what matters NOW: current session, next alert, today's stats
+- MoreScreen uses grouped menu list instead of flat tabs
+- Stack navigator for More section enables deep linking
+- Maintains all functionality while reducing visual complexity
+- ICT traders need speed - 3 taps max to any feature
+
+### Design Philosophy
+**Decision:** Favor speed over hand-holding, context over categorization
+**Rationale:**
+- Smart defaults (auto-detect current killzone) reduce friction
+- Inline stats in filtered views > separate analytics tab
+- Visual hierarchy (session colors, outcome badges, P&L prominence)
+- No wizard flows, no empty states with lengthy explanations
