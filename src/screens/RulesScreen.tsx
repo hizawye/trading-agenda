@@ -1,16 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Modal,
-  TextInput,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useRuleStore } from '../stores/ruleStore';
 import { Rule, RuleCategory } from '../types';
 import { RULE_CATEGORIES } from '../constants/defaultRules';
+import { colors, typography, spacing, radii } from '../design/tokens';
+import { FormModal } from '../components/FormModal';
+import { FormField, FormLabel } from '../components/FormField';
+import { OptionPicker } from '../components/OptionPicker';
+import { FAB } from '../components/FAB';
 
 export default function RulesScreen() {
   const { loadRules, addRule, updateRule, toggleRule, deleteRule, getRulesByCategory } = useRuleStore();
@@ -57,6 +54,14 @@ export default function RulesScreen() {
 
     setModalVisible(false);
     resetForm();
+  };
+
+  const handleDelete = () => {
+    if (editingRule) {
+      deleteRule(editingRule.id);
+      setModalVisible(false);
+      resetForm();
+    }
   };
 
   return (
@@ -109,89 +114,61 @@ export default function RulesScreen() {
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      <TouchableOpacity style={styles.fab} onPress={openAddModal}>
-        <Text style={styles.fabText}>+</Text>
-      </TouchableOpacity>
+      <FAB onPress={openAddModal} />
 
-      <Modal visible={modalVisible} animationType="slide" presentationStyle="pageSheet">
-        <View style={styles.modal}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setModalVisible(false)}>
-              <Text style={styles.cancelBtn}>Cancel</Text>
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>{editingRule ? 'Edit Rule' : 'New Rule'}</Text>
-            <TouchableOpacity onPress={handleSave}>
-              <Text style={styles.saveBtn}>Save</Text>
-            </TouchableOpacity>
-          </View>
+      <FormModal
+        visible={modalVisible}
+        title={editingRule ? 'Edit Rule' : 'New Rule'}
+        onClose={() => setModalVisible(false)}
+        onSave={handleSave}
+        onDelete={editingRule ? handleDelete : undefined}
+      >
+        <FormLabel>Category</FormLabel>
+        <OptionPicker
+          options={RULE_CATEGORIES.map((cat) => ({ value: cat.id, label: cat.label, color: cat.color }))}
+          selected={category}
+          onSelect={setCategory}
+        />
 
-          <Text style={styles.label}>Category</Text>
-          <View style={styles.categoryPicker}>
-            {RULE_CATEGORIES.map((cat) => (
-              <TouchableOpacity
-                key={cat.id}
-                style={[styles.categoryOption, category === cat.id && { backgroundColor: cat.color }]}
-                onPress={() => setCategory(cat.id)}
-              >
-                <Text style={styles.categoryOptionText}>{cat.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <Text style={styles.label}>Rule</Text>
-          <TextInput
-            style={[styles.input, styles.ruleInput]}
-            value={ruleText}
-            onChangeText={setRuleText}
-            placeholder="Enter your trading rule..."
-            placeholderTextColor="#64748B"
-            multiline
-          />
-
-          {editingRule && (
-            <TouchableOpacity
-              style={styles.deleteBtn}
-              onPress={() => {
-                deleteRule(editingRule.id);
-                setModalVisible(false);
-              }}
-            >
-              <Text style={styles.deleteText}>Delete Rule</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </Modal>
+        <FormField
+          label="Rule"
+          value={ruleText}
+          onChangeText={setRuleText}
+          placeholder="Enter your trading rule..."
+          multiline
+        />
+      </FormModal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0F172A' },
-  scrollView: { flex: 1, padding: 16 },
+  container: { flex: 1, backgroundColor: colors.bg.primary },
+  scrollView: { flex: 1, padding: spacing.md },
   categorySection: {
-    marginBottom: 16,
-    backgroundColor: '#1E293B',
-    borderRadius: 12,
+    marginBottom: spacing.md,
+    backgroundColor: colors.bg.secondary,
+    borderRadius: radii.md,
     overflow: 'hidden',
   },
   categoryHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    padding: spacing.md,
   },
   categoryLeft: { flexDirection: 'row', alignItems: 'center' },
-  categoryDot: { width: 12, height: 12, borderRadius: 6, marginRight: 12 },
-  categoryTitle: { color: '#F1F5F9', fontSize: 18, fontWeight: '600' },
-  categoryCount: { color: '#64748B', fontSize: 16, marginLeft: 8 },
-  expandIcon: { color: '#64748B', fontSize: 24 },
-  rulesList: { paddingHorizontal: 16, paddingBottom: 16 },
+  categoryDot: { width: 12, height: 12, borderRadius: 6, marginRight: spacing.sm },
+  categoryTitle: { ...typography.body, fontWeight: '600' },
+  categoryCount: { ...typography.body, color: colors.text.tertiary, marginLeft: spacing.sm },
+  expandIcon: { color: colors.text.tertiary, fontSize: 24 },
+  rulesList: { paddingHorizontal: spacing.md, paddingBottom: spacing.md },
   ruleItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    paddingVertical: 12,
+    paddingVertical: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: '#334155',
+    borderBottomColor: colors.bg.tertiary,
   },
   ruleInactive: { opacity: 0.5 },
   ruleCheck: {
@@ -199,63 +176,14 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#475569',
-    marginRight: 12,
+    borderColor: colors.text.tertiary,
+    marginRight: spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  ruleCheckActive: { backgroundColor: '#10B981', borderColor: '#10B981' },
+  ruleCheckActive: { backgroundColor: colors.semantic.success, borderColor: colors.semantic.success },
   checkMark: { color: '#FFF', fontSize: 14 },
-  ruleText: { color: '#F1F5F9', fontSize: 15, flex: 1, lineHeight: 22 },
-  ruleTextInactive: { color: '#64748B', textDecorationLine: 'line-through' },
-  emptyText: { color: '#64748B', fontStyle: 'italic' },
-  fab: {
-    position: 'absolute',
-    bottom: 24,
-    right: 24,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#10B981',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fabText: { color: '#FFF', fontSize: 32, marginTop: -2 },
-
-  modal: { flex: 1, backgroundColor: '#0F172A', padding: 16 },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 24,
-    paddingTop: 16,
-  },
-  cancelBtn: { color: '#EF4444', fontSize: 16 },
-  saveBtn: { color: '#10B981', fontSize: 16, fontWeight: '600' },
-  modalTitle: { color: '#F1F5F9', fontSize: 18, fontWeight: '600' },
-  label: { color: '#94A3B8', fontSize: 14, marginBottom: 8, marginTop: 16 },
-  categoryPicker: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  categoryOption: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: '#334155',
-    borderRadius: 8,
-  },
-  categoryOptionText: { color: '#FFF', fontSize: 14 },
-  input: {
-    backgroundColor: '#1E293B',
-    borderRadius: 8,
-    padding: 14,
-    color: '#F1F5F9',
-    fontSize: 16,
-  },
-  ruleInput: { height: 120, textAlignVertical: 'top' },
-  deleteBtn: {
-    backgroundColor: '#7F1D1D',
-    padding: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 32,
-  },
-  deleteText: { color: '#FCA5A5', fontSize: 16 },
+  ruleText: { ...typography.body, flex: 1, lineHeight: 22 },
+  ruleTextInactive: { color: colors.text.tertiary, textDecorationLine: 'line-through' },
+  emptyText: { ...typography.caption, fontStyle: 'italic' },
 });

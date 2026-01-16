@@ -1,15 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Modal,
-  Alert,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Alert } from 'react-native';
 import { useSettingsStore } from '../stores/settingsStore';
 import { TimeRange, Session, Killzone } from '../types';
+import { colors, typography, spacing, radii } from '../design/tokens';
+import { ScreenLayout } from '../components/ScreenLayout';
+import { Card } from '../components/Card';
 
 type TimePickerMode = 'session' | 'killzone';
 type TimePickerField = 'start' | 'end';
@@ -58,11 +53,9 @@ export default function SettingsScreen() {
   const handleTimeChange = (type: 'hour' | 'minute', delta: number) => {
     setTimePicker((prev) => {
       if (type === 'hour') {
-        const newHour = (prev.hour + delta + 24) % 24;
-        return { ...prev, hour: newHour };
+        return { ...prev, hour: (prev.hour + delta + 24) % 24 };
       } else {
-        const newMinute = (prev.minute + delta + 60) % 60;
-        return { ...prev, minute: newMinute };
+        return { ...prev, minute: (prev.minute + delta + 60) % 60 };
       }
     });
   };
@@ -107,20 +100,20 @@ export default function SettingsScreen() {
 
   if (!loaded) {
     return (
-      <View style={styles.container}>
+      <View style={styles.loadingContainer}>
         <Text style={styles.loadingText}>Loading settings...</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScreenLayout>
       {/* Sessions Section */}
       <Text style={styles.sectionTitle}>Session Times</Text>
       <Text style={styles.sectionSubtitle}>All times in NY timezone (EST/EDT)</Text>
 
       {sessions.map((session) => (
-        <View key={session.id} style={styles.timeCard}>
+        <Card key={session.id}>
           <View style={styles.timeCardHeader}>
             <View style={[styles.colorDot, { backgroundColor: session.color }]} />
             <Text style={styles.timeName}>{session.name}</Text>
@@ -141,15 +134,15 @@ export default function SettingsScreen() {
               <Text style={styles.timeValue}>{formatTime(session.times.endHour, session.times.endMinute)}</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </Card>
       ))}
 
       {/* Killzones Section */}
-      <Text style={[styles.sectionTitle, { marginTop: 32 }]}>Killzone Times</Text>
+      <Text style={[styles.sectionTitle, { marginTop: spacing.xl }]}>Killzone Times</Text>
       <Text style={styles.sectionSubtitle}>Precise trading windows for entries</Text>
 
       {killzones.map((kz) => (
-        <View key={kz.id} style={styles.timeCard}>
+        <Card key={kz.id}>
           <View style={styles.timeCardHeader}>
             <View style={[styles.colorDot, { backgroundColor: kz.color }]} />
             <View>
@@ -173,15 +166,13 @@ export default function SettingsScreen() {
               <Text style={styles.timeValue}>{formatTime(kz.times.endHour, kz.times.endMinute)}</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </Card>
       ))}
 
       {/* Reset Button */}
       <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
         <Text style={styles.resetText}>Reset to Defaults</Text>
       </TouchableOpacity>
-
-      <View style={{ height: 40 }} />
 
       {/* Time Picker Modal */}
       <Modal visible={timePicker.visible} transparent animationType="fade">
@@ -192,7 +183,6 @@ export default function SettingsScreen() {
             </Text>
 
             <View style={styles.pickerContainer}>
-              {/* Hour */}
               <View style={styles.pickerColumn}>
                 <TouchableOpacity style={styles.pickerBtn} onPress={() => handleTimeChange('hour', 1)}>
                   <Text style={styles.pickerBtnText}>▲</Text>
@@ -205,7 +195,6 @@ export default function SettingsScreen() {
 
               <Text style={styles.pickerSeparator}>:</Text>
 
-              {/* Minute */}
               <View style={styles.pickerColumn}>
                 <TouchableOpacity style={styles.pickerBtn} onPress={() => handleTimeChange('minute', 5)}>
                   <Text style={styles.pickerBtnText}>▲</Text>
@@ -233,45 +222,38 @@ export default function SettingsScreen() {
           </View>
         </View>
       </Modal>
-    </ScrollView>
+    </ScreenLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0F172A' },
-  content: { padding: 16 },
-  loadingText: { color: '#94A3B8', textAlign: 'center', marginTop: 100 },
+  loadingContainer: { flex: 1, backgroundColor: colors.bg.primary, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { ...typography.body, color: colors.text.secondary },
 
-  sectionTitle: { color: '#F1F5F9', fontSize: 20, fontWeight: '600', marginBottom: 4 },
-  sectionSubtitle: { color: '#64748B', fontSize: 14, marginBottom: 16 },
+  sectionTitle: { ...typography.title, fontSize: 20, marginBottom: spacing.xs },
+  sectionSubtitle: { ...typography.caption, marginBottom: spacing.md },
 
-  timeCard: {
-    backgroundColor: '#1E293B',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-  },
-  timeCardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  colorDot: { width: 12, height: 12, borderRadius: 6, marginRight: 10 },
-  timeName: { color: '#F1F5F9', fontSize: 16, fontWeight: '500' },
-  timeDescription: { color: '#64748B', fontSize: 12, marginTop: 2 },
-  timeRow: { flexDirection: 'row', gap: 12 },
+  timeCardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
+  colorDot: { width: 12, height: 12, borderRadius: 6, marginRight: spacing.sm },
+  timeName: { ...typography.body, fontWeight: '500' },
+  timeDescription: { ...typography.caption, marginTop: 2 },
+  timeRow: { flexDirection: 'row', gap: spacing.sm },
   timeButton: {
     flex: 1,
-    backgroundColor: '#334155',
-    borderRadius: 8,
-    padding: 12,
+    backgroundColor: colors.bg.tertiary,
+    borderRadius: radii.sm,
+    padding: spacing.sm,
     alignItems: 'center',
   },
-  timeLabel: { color: '#94A3B8', fontSize: 12, marginBottom: 4 },
-  timeValue: { color: '#F1F5F9', fontSize: 16, fontWeight: '600' },
+  timeLabel: { ...typography.caption, marginBottom: spacing.xs },
+  timeValue: { ...typography.body, fontWeight: '600' },
 
   resetButton: {
     backgroundColor: '#7F1D1D',
-    padding: 16,
-    borderRadius: 8,
+    padding: spacing.md,
+    borderRadius: radii.sm,
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: spacing.lg,
   },
   resetText: { color: '#FCA5A5', fontSize: 16 },
 
@@ -282,37 +264,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#1E293B',
-    borderRadius: 16,
-    padding: 24,
+    backgroundColor: colors.bg.secondary,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
     width: '80%',
     alignItems: 'center',
   },
-  modalTitle: { color: '#F1F5F9', fontSize: 18, fontWeight: '600', marginBottom: 24 },
+  modalTitle: { ...typography.body, fontWeight: '600', marginBottom: spacing.lg },
 
-  pickerContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+  pickerContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md },
   pickerColumn: { alignItems: 'center' },
-  pickerBtn: { padding: 12 },
-  pickerBtnText: { color: '#10B981', fontSize: 24 },
-  pickerValue: { color: '#F1F5F9', fontSize: 48, fontWeight: '300', width: 80, textAlign: 'center' },
-  pickerSeparator: { color: '#F1F5F9', fontSize: 48, fontWeight: '300', marginHorizontal: 8 },
-  pickerPreview: { color: '#94A3B8', fontSize: 16, marginBottom: 24 },
+  pickerBtn: { padding: spacing.sm },
+  pickerBtnText: { color: colors.semantic.success, fontSize: 24 },
+  pickerValue: { ...typography.hero, width: 80, textAlign: 'center' },
+  pickerSeparator: { ...typography.hero, marginHorizontal: spacing.sm },
+  pickerPreview: { ...typography.body, color: colors.text.secondary, marginBottom: spacing.lg },
 
-  modalActions: { flexDirection: 'row', gap: 12, width: '100%' },
+  modalActions: { flexDirection: 'row', gap: spacing.sm, width: '100%' },
   modalCancelBtn: {
     flex: 1,
-    backgroundColor: '#334155',
-    padding: 14,
-    borderRadius: 8,
+    backgroundColor: colors.bg.tertiary,
+    padding: spacing.md,
+    borderRadius: radii.sm,
     alignItems: 'center',
   },
-  modalCancelText: { color: '#94A3B8', fontSize: 16 },
+  modalCancelText: { ...typography.body, color: colors.text.secondary },
   modalSaveBtn: {
     flex: 1,
-    backgroundColor: '#10B981',
-    padding: 14,
-    borderRadius: 8,
+    backgroundColor: colors.semantic.success,
+    padding: spacing.md,
+    borderRadius: radii.sm,
     alignItems: 'center',
   },
-  modalSaveText: { color: '#FFF', fontSize: 16, fontWeight: '600' },
+  modalSaveText: { ...typography.body, color: '#FFF', fontWeight: '600' },
 });

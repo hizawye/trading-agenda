@@ -1,17 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  Switch,
-  TouchableOpacity,
-  Modal,
-  TextInput,
-} from 'react-native';
+import { View, Text, StyleSheet, FlatList, Switch, TouchableOpacity } from 'react-native';
 import { useAlertStore } from '../stores/alertStore';
 import { Alert } from '../types';
 import { formatTime } from '../lib/utils';
+import { colors, typography, spacing, radii } from '../design/tokens';
+import { FormModal } from '../components/FormModal';
+import { FormField, FormLabel } from '../components/FormField';
+import { FAB } from '../components/FAB';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -64,6 +59,14 @@ export default function AlertsScreen() {
     resetForm();
   };
 
+  const handleDelete = () => {
+    if (editingAlert) {
+      deleteAlert(editingAlert.id);
+      setModalVisible(false);
+      resetForm();
+    }
+  };
+
   const toggleDay = (day: number) => {
     setDays((prev) =>
       prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day].sort()
@@ -78,10 +81,7 @@ export default function AlertsScreen() {
         {item.description && <Text style={styles.alertDesc}>{item.description}</Text>}
         <View style={styles.daysRow}>
           {DAYS.map((d, i) => (
-            <Text
-              key={d}
-              style={[styles.dayText, item.days.includes(i) && styles.dayActive]}
-            >
+            <Text key={d} style={[styles.dayText, item.days.includes(i) && styles.dayActive]}>
               {d}
             </Text>
           ))}
@@ -90,8 +90,8 @@ export default function AlertsScreen() {
       <Switch
         value={item.enabled}
         onValueChange={() => toggleAlert(item.id)}
-        trackColor={{ false: '#334155', true: '#065F46' }}
-        thumbColor={item.enabled ? '#10B981' : '#64748B'}
+        trackColor={{ false: colors.bg.tertiary, true: '#065F46' }}
+        thumbColor={item.enabled ? colors.semantic.success : colors.text.tertiary}
       />
     </TouchableOpacity>
   );
@@ -105,149 +105,114 @@ export default function AlertsScreen() {
         contentContainerStyle={styles.list}
       />
 
-      <TouchableOpacity style={styles.fab} onPress={openAddModal}>
-        <Text style={styles.fabText}>+</Text>
-      </TouchableOpacity>
+      <FAB onPress={openAddModal} />
 
-      <Modal visible={modalVisible} animationType="slide" presentationStyle="pageSheet">
-        <View style={styles.modal}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setModalVisible(false)}>
-              <Text style={styles.cancelBtn}>Cancel</Text>
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>{editingAlert ? 'Edit Alert' : 'New Alert'}</Text>
-            <TouchableOpacity onPress={handleSave}>
-              <Text style={styles.saveBtn}>Save</Text>
-            </TouchableOpacity>
-          </View>
+      <FormModal
+        visible={modalVisible}
+        title={editingAlert ? 'Edit Alert' : 'New Alert'}
+        onClose={() => setModalVisible(false)}
+        onSave={handleSave}
+        onDelete={editingAlert ? handleDelete : undefined}
+      >
+        <FormField
+          label="Time (24h format)"
+          value={time}
+          onChangeText={setTime}
+          placeholder="07:30"
+        />
 
-          <Text style={styles.label}>Time (24h format)</Text>
-          <TextInput
-            style={styles.input}
-            value={time}
-            onChangeText={setTime}
-            placeholder="07:30"
-            placeholderTextColor="#64748B"
-          />
+        <FormField
+          label="Label"
+          value={label}
+          onChangeText={setLabel}
+          placeholder="Position before liquidity"
+        />
 
-          <Text style={styles.label}>Label</Text>
-          <TextInput
-            style={styles.input}
-            value={label}
-            onChangeText={setLabel}
-            placeholder="Position before liquidity"
-            placeholderTextColor="#64748B"
-          />
+        <FormField
+          label="Description (optional)"
+          value={description}
+          onChangeText={setDescription}
+          placeholder="Details about this alert"
+        />
 
-          <Text style={styles.label}>Description (optional)</Text>
-          <TextInput
-            style={styles.input}
-            value={description}
-            onChangeText={setDescription}
-            placeholder="Details about this alert"
-            placeholderTextColor="#64748B"
-          />
-
-          <Text style={styles.label}>Days</Text>
-          <View style={styles.daysSelector}>
-            {DAYS.map((d, i) => (
-              <TouchableOpacity
-                key={d}
-                style={[styles.dayBtn, days.includes(i) && styles.dayBtnActive]}
-                onPress={() => toggleDay(i)}
-              >
-                <Text style={[styles.dayBtnText, days.includes(i) && styles.dayBtnTextActive]}>
-                  {d}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {editingAlert && (
+        <FormLabel>Days</FormLabel>
+        <View style={styles.daysSelector}>
+          {DAYS.map((d, i) => (
             <TouchableOpacity
-              style={styles.deleteBtn}
-              onPress={() => {
-                deleteAlert(editingAlert.id);
-                setModalVisible(false);
-              }}
+              key={d}
+              style={[styles.dayBtn, days.includes(i) && styles.dayBtnActive]}
+              onPress={() => toggleDay(i)}
             >
-              <Text style={styles.deleteText}>Delete Alert</Text>
+              <Text style={[styles.dayBtnText, days.includes(i) && styles.dayBtnTextActive]}>
+                {d}
+              </Text>
             </TouchableOpacity>
-          )}
+          ))}
         </View>
-      </Modal>
+      </FormModal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0F172A' },
-  list: { padding: 16 },
+  container: { flex: 1, backgroundColor: colors.bg.primary },
+  list: { padding: spacing.md },
   alertCard: {
-    backgroundColor: '#1E293B',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    backgroundColor: colors.bg.secondary,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  alertLeft: { flex: 1, marginRight: 16 },
-  alertTime: { color: '#10B981', fontSize: 28, fontWeight: 'bold' },
-  alertLabel: { color: '#F1F5F9', fontSize: 16, marginTop: 4 },
-  alertDesc: { color: '#64748B', fontSize: 14, marginTop: 2 },
-  daysRow: { flexDirection: 'row', marginTop: 8, gap: 6 },
-  dayText: { color: '#475569', fontSize: 12 },
-  dayActive: { color: '#10B981', fontWeight: '600' },
-  fab: {
-    position: 'absolute',
-    bottom: 24,
-    right: 24,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#10B981',
-    alignItems: 'center',
-    justifyContent: 'center',
+  alertLeft: { flex: 1, marginRight: spacing.md },
+  alertTime: {
+    color: colors.semantic.success,
+    fontSize: 28,
+    fontWeight: 'bold',
   },
-  fabText: { color: '#FFF', fontSize: 32, marginTop: -2 },
-
-  modal: { flex: 1, backgroundColor: '#0F172A', padding: 16 },
-  modalHeader: {
+  alertLabel: {
+    ...typography.body,
+    marginTop: spacing.xs,
+  },
+  alertDesc: {
+    ...typography.caption,
+    color: colors.text.tertiary,
+    marginTop: 2,
+  },
+  daysRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 24,
-    paddingTop: 16,
+    marginTop: spacing.sm,
+    gap: 6,
   },
-  cancelBtn: { color: '#EF4444', fontSize: 16 },
-  saveBtn: { color: '#10B981', fontSize: 16, fontWeight: '600' },
-  modalTitle: { color: '#F1F5F9', fontSize: 18, fontWeight: '600' },
-  label: { color: '#94A3B8', fontSize: 14, marginBottom: 8, marginTop: 16 },
-  input: {
-    backgroundColor: '#1E293B',
-    borderRadius: 8,
-    padding: 14,
-    color: '#F1F5F9',
-    fontSize: 16,
+  dayText: {
+    ...typography.caption,
+    color: colors.text.tertiary,
   },
-  daysSelector: { flexDirection: 'row', gap: 8 },
+  dayActive: {
+    color: colors.semantic.success,
+    fontWeight: '600',
+  },
+  daysSelector: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
   dayBtn: {
     flex: 1,
-    paddingVertical: 12,
-    backgroundColor: '#334155',
-    borderRadius: 8,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.bg.tertiary,
+    borderRadius: radii.sm,
     alignItems: 'center',
   },
-  dayBtnActive: { backgroundColor: '#10B981' },
-  dayBtnText: { color: '#94A3B8', fontSize: 12, fontWeight: '600' },
-  dayBtnTextActive: { color: '#FFF' },
-  deleteBtn: {
-    backgroundColor: '#7F1D1D',
-    padding: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 32,
+  dayBtnActive: {
+    backgroundColor: colors.semantic.success,
   },
-  deleteText: { color: '#FCA5A5', fontSize: 16 },
+  dayBtnText: {
+    ...typography.caption,
+    fontWeight: '600',
+  },
+  dayBtnTextActive: {
+    color: '#FFF',
+  },
 });

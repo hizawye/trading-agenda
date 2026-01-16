@@ -1,5 +1,23 @@
 # Trading Agenda - Changelog
 
+## [0.2.0] - 2026-01-16
+
+### Added
+- Design system with centralized tokens (colors, typography, spacing, radii)
+- 10 reusable UI components: FormModal, OptionPicker, Card, Stat, FormField, FAB, TradeCard, StatRow, SessionBadge, ScreenLayout
+- EAS Build configuration (eas.json)
+
+### Changed
+- Minimalist UI redesign across all 6 screens
+- Refactored screens to use shared components (47% reduction in JournalScreen alone)
+- Unified modal pattern (FormModal) eliminates 400+ lines of duplication
+- Consistent typography scale (4 levels: hero, title, body, caption)
+- Settings store now loads on app init (App.tsx)
+
+### Fixed
+- Asset icons converted from misnamed JPEGs to proper PNG format
+- All expo-doctor checks now pass (17/17)
+
 ## [0.1.1] - 2026-01-15
 
 ### Fixed

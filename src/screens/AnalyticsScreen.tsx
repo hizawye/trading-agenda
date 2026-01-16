@@ -1,9 +1,15 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useTradeStore } from '../stores/tradeStore';
 import { SESSIONS } from '../constants/sessions';
 import { DEFAULT_KILLZONES } from '../constants/killzones';
 import { Session, SetupType, Killzone } from '../types';
+import { colors, typography, spacing } from '../design/tokens';
+import { pnlColor, winRateColor } from '../design/utils';
+import { ScreenLayout } from '../components/ScreenLayout';
+import { Card } from '../components/Card';
+import { Stat } from '../components/Stat';
+import { StatRow } from '../components/StatRow';
 
 const SETUP_TYPES: SetupType[] = ['continuation', 'reversal', 'liquidity_sweep', 'fvg_fill', 'breakout', 'other'];
 
@@ -49,197 +55,150 @@ export default function AnalyticsScreen() {
     };
   };
 
-  return (
-    <ScrollView style={styles.container}>
-      {/* Overview */}
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Overview</Text>
-        <View style={styles.statsGrid}>
-          <View style={styles.stat}>
-            <Text style={styles.statValue}>{completedTrades.length}</Text>
-            <Text style={styles.statLabel}>Total Trades</Text>
-          </View>
-          <View style={styles.stat}>
-            <Text style={[styles.statValue, { color: '#10B981' }]}>{wins}</Text>
-            <Text style={styles.statLabel}>Wins</Text>
-          </View>
-          <View style={styles.stat}>
-            <Text style={[styles.statValue, { color: '#EF4444' }]}>{losses}</Text>
-            <Text style={styles.statLabel}>Losses</Text>
-          </View>
-          <View style={styles.stat}>
-            <Text style={styles.statValue}>{getWinRate().toFixed(1)}%</Text>
-            <Text style={styles.statLabel}>Win Rate</Text>
-          </View>
-        </View>
+  const getStreak = () => {
+    let streak = 0;
+    let streakType: 'win' | 'loss' | null = null;
+    for (const trade of completedTrades) {
+      if (trade.outcome === 'win' || trade.outcome === 'loss') {
+        if (streakType === null) {
+          streakType = trade.outcome;
+          streak = 1;
+        } else if (trade.outcome === streakType) {
+          streak++;
+        } else {
+          break;
+        }
+      }
+    }
+    return { streak, streakType };
+  };
 
-        <View style={styles.statsRow}>
-          <View style={styles.stat}>
-            <Text style={[styles.statValue, { color: totalPnL >= 0 ? '#10B981' : '#EF4444' }]}>
-              {totalPnL >= 0 ? '+' : ''}{totalPnL.toFixed(2)}
-            </Text>
-            <Text style={styles.statLabel}>Total P&L</Text>
-          </View>
-          <View style={styles.stat}>
-            <Text style={styles.statValue}>{avgRR.toFixed(2)}R</Text>
-            <Text style={styles.statLabel}>Avg R:R</Text>
-          </View>
+  const { streak, streakType } = getStreak();
+
+  return (
+    <ScreenLayout>
+      {/* Overview */}
+      <Card title="Overview">
+        <View style={styles.statsGrid}>
+          <Stat value={completedTrades.length} label="Total" size="sm" />
+          <Stat value={wins} label="Wins" size="sm" color={colors.semantic.success} />
+          <Stat value={losses} label="Losses" size="sm" color={colors.semantic.error} />
+          <Stat value={`${getWinRate().toFixed(0)}%`} label="Win Rate" size="sm" />
         </View>
-      </View>
+        <View style={styles.divider} />
+        <View style={styles.statsRow}>
+          <Stat
+            value={`${totalPnL >= 0 ? '+' : ''}${totalPnL.toFixed(2)}`}
+            label="Total P&L"
+            size="sm"
+            color={pnlColor(totalPnL)}
+          />
+          <Stat value={`${avgRR.toFixed(2)}R`} label="Avg R:R" size="sm" />
+        </View>
+      </Card>
 
       {/* By Session */}
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>By Session</Text>
+      <Card title="By Session">
         {SESSIONS.map((session) => {
           const stats = getSessionStats(session.id);
           return (
-            <View key={session.id} style={styles.row}>
-              <View style={styles.rowLeft}>
-                <View style={[styles.dot, { backgroundColor: session.color }]} />
-                <Text style={styles.rowLabel}>{session.name}</Text>
-              </View>
-              <View style={styles.rowRight}>
-                <Text style={styles.rowStat}>{stats.total} trades</Text>
-                <Text style={[styles.rowWinRate, { color: stats.winRate >= 50 ? '#10B981' : '#EF4444' }]}>
-                  {stats.winRate.toFixed(0)}%
-                </Text>
-                <Text style={[styles.rowPnL, { color: stats.pnl >= 0 ? '#10B981' : '#EF4444' }]}>
-                  {stats.pnl >= 0 ? '+' : ''}{stats.pnl.toFixed(0)}
-                </Text>
-              </View>
-            </View>
+            <StatRow
+              key={session.id}
+              label={session.name}
+              icon={<View style={[styles.dot, { backgroundColor: session.color }]} />}
+              stats={[
+                { label: 'Trades', value: stats.total },
+                { label: 'Win %', value: `${stats.winRate.toFixed(0)}%`, color: winRateColor(stats.winRate) },
+                { label: 'P&L', value: `${stats.pnl >= 0 ? '+' : ''}${stats.pnl.toFixed(0)}`, color: pnlColor(stats.pnl) },
+              ]}
+            />
           );
         })}
-      </View>
+      </Card>
 
       {/* By Killzone */}
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>By Killzone</Text>
+      <Card title="By Killzone">
         {DEFAULT_KILLZONES.map((kz) => {
           const stats = getKillzoneStats(kz.id);
           if (stats.total === 0) return null;
           return (
-            <View key={kz.id} style={styles.row}>
-              <View style={styles.rowLeft}>
-                <View style={[styles.dot, { backgroundColor: kz.color }]} />
-                <Text style={styles.rowLabel}>{kz.name}</Text>
-              </View>
-              <View style={styles.rowRight}>
-                <Text style={styles.rowStat}>{stats.total} trades</Text>
-                <Text style={[styles.rowWinRate, { color: stats.winRate >= 50 ? '#10B981' : '#EF4444' }]}>
-                  {stats.winRate.toFixed(0)}%
-                </Text>
-                <Text style={[styles.rowPnL, { color: stats.pnl >= 0 ? '#10B981' : '#EF4444' }]}>
-                  {stats.pnl >= 0 ? '+' : ''}{stats.pnl.toFixed(0)}
-                </Text>
-              </View>
-            </View>
+            <StatRow
+              key={kz.id}
+              label={kz.name}
+              icon={<View style={[styles.dot, { backgroundColor: kz.color }]} />}
+              stats={[
+                { label: 'Trades', value: stats.total },
+                { label: 'Win %', value: `${stats.winRate.toFixed(0)}%`, color: winRateColor(stats.winRate) },
+                { label: 'P&L', value: `${stats.pnl >= 0 ? '+' : ''}${stats.pnl.toFixed(0)}`, color: pnlColor(stats.pnl) },
+              ]}
+            />
           );
         })}
-      </View>
+      </Card>
 
       {/* By Setup */}
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>By Setup Type</Text>
+      <Card title="By Setup Type">
         {SETUP_TYPES.map((setup) => {
           const stats = getSetupStats(setup);
           if (stats.total === 0) return null;
           return (
-            <View key={setup} style={styles.row}>
-              <Text style={styles.rowLabel}>{setup.replace('_', ' ')}</Text>
-              <View style={styles.rowRight}>
-                <Text style={styles.rowStat}>{stats.total} trades</Text>
-                <Text style={[styles.rowWinRate, { color: stats.winRate >= 50 ? '#10B981' : '#EF4444' }]}>
-                  {stats.winRate.toFixed(0)}%
-                </Text>
-              </View>
-            </View>
+            <StatRow
+              key={setup}
+              label={setup.replace('_', ' ')}
+              stats={[
+                { label: 'Trades', value: stats.total },
+                { label: 'Win %', value: `${stats.winRate.toFixed(0)}%`, color: winRateColor(stats.winRate) },
+              ]}
+            />
           );
         })}
-      </View>
+      </Card>
 
       {/* Streak */}
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Current Streak</Text>
-        {(() => {
-          let streak = 0;
-          let streakType: 'win' | 'loss' | null = null;
-          for (const trade of completedTrades) {
-            if (trade.outcome === 'win' || trade.outcome === 'loss') {
-              if (streakType === null) {
-                streakType = trade.outcome;
-                streak = 1;
-              } else if (trade.outcome === streakType) {
-                streak++;
-              } else {
-                break;
-              }
-            }
-          }
-          return (
-            <View style={styles.streakContainer}>
-              <Text style={[styles.streakValue, { color: streakType === 'win' ? '#10B981' : '#EF4444' }]}>
-                {streak}
-              </Text>
-              <Text style={styles.streakLabel}>
-                {streakType === 'win' ? 'Winning' : streakType === 'loss' ? 'Losing' : 'No'} streak
-              </Text>
-            </View>
-          );
-        })()}
-      </View>
-
-      <View style={{ height: 32 }} />
-    </ScrollView>
+      <Card title="Current Streak">
+        <View style={styles.streakContainer}>
+          <Text style={[styles.streakValue, { color: streakType === 'win' ? colors.semantic.success : colors.semantic.error }]}>
+            {streak}
+          </Text>
+          <Text style={styles.streakLabel}>
+            {streakType === 'win' ? 'Winning' : streakType === 'loss' ? 'Losing' : 'No'} streak
+          </Text>
+        </View>
+      </Card>
+    </ScreenLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0F172A', padding: 16 },
-  card: {
-    backgroundColor: '#1E293B',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    color: '#94A3B8',
-    fontSize: 14,
-    marginBottom: 16,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
   statsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 16,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.bg.tertiary,
+    marginVertical: spacing.md,
   },
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#334155',
   },
-  stat: { alignItems: 'center' },
-  statValue: { color: '#F1F5F9', fontSize: 24, fontWeight: 'bold' },
-  statLabel: { color: '#64748B', fontSize: 12, marginTop: 4 },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  dot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  streakContainer: {
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#334155',
+    paddingVertical: spacing.md,
   },
-  rowLeft: { flexDirection: 'row', alignItems: 'center' },
-  dot: { width: 10, height: 10, borderRadius: 5, marginRight: 10 },
-  rowLabel: { color: '#F1F5F9', fontSize: 16, textTransform: 'capitalize' },
-  rowRight: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  rowStat: { color: '#64748B', fontSize: 14 },
-  rowWinRate: { fontSize: 16, fontWeight: '600', width: 50, textAlign: 'right' },
-  rowPnL: { fontSize: 14, width: 60, textAlign: 'right' },
-  streakContainer: { alignItems: 'center', paddingVertical: 16 },
-  streakValue: { fontSize: 48, fontWeight: 'bold' },
-  streakLabel: { color: '#94A3B8', fontSize: 16, marginTop: 8 },
+  streakValue: {
+    ...typography.hero,
+    fontWeight: 'bold',
+  },
+  streakLabel: {
+    ...typography.body,
+    color: colors.text.secondary,
+    marginTop: spacing.sm,
+  },
 });
