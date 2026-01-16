@@ -22,6 +22,8 @@ app.post('/api/login', async (req, res) => {
   try {
     const { email, password, partnerId } = req.body;
 
+    console.log('Login request:', { email, partnerId });
+
     const response = await fetch(`${MAVEN_API}/mtr-core-edge/login`, {
       method: 'POST',
       headers: {
@@ -35,25 +37,40 @@ app.post('/api/login', async (req, res) => {
       }),
     });
 
-    const data = await response.json();
+    const contentType = response.headers.get('content-type');
+    let data;
+
+    // Check if response is JSON
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      console.error('Non-JSON response from Maven:', text.substring(0, 500));
+      return res.status(500).json({
+        error: 'Invalid response from Maven API',
+        details: text.substring(0, 200)
+      });
+    }
 
     if (!response.ok) {
+      console.error('Login failed:', response.status, data);
       return res.status(response.status).json(data);
     }
 
+    console.log('Login successful');
     res.json(data);
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error.message, stack: error.stack });
   }
 });
 
 // Generic proxy for authenticated requests
 app.all('/api/maven/*', async (req, res) => {
   try {
-    const { token, tradingApiToken } = req.headers;
+    const { token, tradingapitoken } = req.headers;
 
-    if (!token || !tradingApiToken) {
+    if (!token || !tradingapitoken) {
       return res.status(401).json({ error: 'Missing authentication tokens' });
     }
 
@@ -61,10 +78,12 @@ app.all('/api/maven/*', async (req, res) => {
     const path = req.params[0];
     const url = `${MAVEN_API}/${path}`;
 
+    console.log('Proxying request:', req.method, path);
+
     const options = {
       method: req.method,
       headers: {
-        'auth-trading-api': tradingApiToken,
+        'auth-trading-api': tradingapitoken,
         'cookie': `co-auth=${token}`,
         'accept': 'application/json, text/plain, */*',
         'content-type': 'application/json',
@@ -77,16 +96,30 @@ app.all('/api/maven/*', async (req, res) => {
     }
 
     const response = await fetch(url, options);
-    const data = await response.json();
+
+    const contentType = response.headers.get('content-type');
+    let data;
+
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      console.error('Non-JSON response:', text.substring(0, 500));
+      return res.status(500).json({
+        error: 'Invalid response from Maven API',
+        details: text.substring(0, 200)
+      });
+    }
 
     if (!response.ok) {
+      console.error('API error:', response.status, data);
       return res.status(response.status).json(data);
     }
 
     res.json(data);
   } catch (error) {
     console.error('Proxy error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error.message, stack: error.stack });
   }
 });
 
