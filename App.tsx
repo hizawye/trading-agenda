@@ -5,7 +5,7 @@ import Navigation from './src/navigation';
 import { useSettingsStore } from './src/stores/settingsStore';
 
 Sentry.init({
-  dsn: 'YOUR_SENTRY_DSN',
+  dsn: 'https://4d5aabc9c1d9d227d9d69bfe4fbdeada@o4510721403715584.ingest.us.sentry.io/4510721406992384',
   enableInExpoDevelopment: false,
   debug: false,
 });
