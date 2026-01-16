@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Switch, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Switch, TouchableOpacity, Platform, Alert } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useAlertStore } from '../stores/alertStore';
-import { Alert } from '../types';
+import { Alert as TimeAlert } from '../types';
 import { formatTime } from '../lib/utils';
 import { colors, typography, spacing, radii } from '../design/tokens';
 import { FormModal } from '../components/FormModal';
@@ -14,7 +14,7 @@ const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export default function AlertsScreen() {
   const { alerts, loadAlerts, addAlert, updateAlert, toggleAlert, deleteAlert } = useAlertStore();
   const [modalVisible, setModalVisible] = useState(false);
-  const [editingAlert, setEditingAlert] = useState<Alert | null>(null);
+  const [editingAlert, setEditingAlert] = useState<TimeAlert | null>(null);
 
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [label, setLabel] = useState('');
@@ -41,7 +41,7 @@ export default function AlertsScreen() {
     setModalVisible(true);
   };
 
-  const openEditModal = (alert: Alert) => {
+  const openEditModal = (alert: TimeAlert) => {
     setEditingAlert(alert);
     const [hours, minutes] = alert.time.split(':').map(Number);
     const date = new Date();
@@ -54,20 +54,25 @@ export default function AlertsScreen() {
   };
 
   const handleSave = async () => {
-    const hours = selectedDate.getHours().toString().padStart(2, '0');
-    const minutes = selectedDate.getMinutes().toString().padStart(2, '0');
-    const time = `${hours}:${minutes}`;
+    try {
+      const hours = selectedDate.getHours().toString().padStart(2, '0');
+      const minutes = selectedDate.getMinutes().toString().padStart(2, '0');
+      const time = `${hours}:${minutes}`;
 
-    const alertData = { time, label, description, days, enabled: true };
+      const alertData = { time, label, description, days, enabled: true };
 
-    if (editingAlert) {
-      await updateAlert({ ...editingAlert, ...alertData });
-    } else {
-      await addAlert(alertData);
+      if (editingAlert) {
+        await updateAlert({ ...editingAlert, ...alertData });
+      } else {
+        await addAlert(alertData);
+      }
+
+      setModalVisible(false);
+      resetForm();
+    } catch (error) {
+      console.error('Failed to save alert:', error);
+      Alert.alert('Error', 'Failed to save alert. Please try again.');
     }
-
-    setModalVisible(false);
-    resetForm();
   };
 
   const handleDelete = () => {
@@ -84,7 +89,7 @@ export default function AlertsScreen() {
     );
   };
 
-  const renderAlert = ({ item }: { item: Alert }) => (
+  const renderAlert = ({ item }: { item: TimeAlert }) => (
     <TouchableOpacity style={styles.alertCard} onPress={() => openEditModal(item)}>
       <View style={styles.alertLeft}>
         <Text style={styles.alertTime}>{formatTime(item.time)}</Text>
