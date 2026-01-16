@@ -14,6 +14,9 @@ import { FormField, FormLabel } from '../components/FormField';
 import { OptionPicker } from '../components/OptionPicker';
 import { TradeCard } from '../components/TradeCard';
 import { FAB } from '../components/FAB';
+import { Card } from '../components/Card';
+import { Stat } from '../components/Stat';
+import { SESSIONS } from '../constants/sessions';
 
 const SETUP_TYPES: SetupType[] = ['continuation', 'reversal', 'liquidity_sweep', 'fvg_fill', 'breakout', 'other'];
 const CONFIRMATIONS: Confirmation[] = ['smt', 'mss', 'bos', 'fvg', 'swing_sweep', 'pd_array', 'time_window'];
@@ -40,6 +43,11 @@ export default function JournalScreen() {
   const [confirmations, setConfirmations] = useState<Confirmation[]>([]);
   const [images, setImages] = useState<string[]>([]);
   const [quickMode, setQuickMode] = useState(true); // Quick vs full form mode
+
+  // Filter state
+  const [filterSession, setFilterSession] = useState<Session | 'all'>('all');
+  const [filterSetup, setFilterSetup] = useState<SetupType | 'all'>('all');
+  const [filterOutcome, setFilterOutcome] = useState<TradeOutcome | 'all'>('all');
 
   useEffect(() => {
     loadTrades();
@@ -183,10 +191,74 @@ export default function JournalScreen() {
     ]);
   };
 
+  // Filtered trades
+  const filteredTrades = trades.filter((trade) => {
+    if (filterSession !== 'all' && trade.session !== filterSession) return false;
+    if (filterSetup !== 'all' && trade.setupType !== filterSetup) return false;
+    if (filterOutcome !== 'all' && trade.outcome !== filterOutcome) return false;
+    return true;
+  });
+
+  // Filter stats
+  const filterStats = (() => {
+    const completed = filteredTrades.filter((t) => t.outcome !== 'pending');
+    const wins = completed.filter((t) => t.outcome === 'win').length;
+    const winRate = completed.length > 0 ? (wins / completed.length) * 100 : 0;
+    const totalPnL = completed.reduce((sum, t) => sum + (t.pnl || 0), 0);
+    const avgRR = completed.length > 0
+      ? completed.reduce((sum, t) => sum + (t.riskReward || 0), 0) / completed.length
+      : 0;
+    return { trades: filteredTrades.length, winRate, totalPnL, avgRR };
+  })();
+
+  const hasActiveFilters = filterSession !== 'all' || filterSetup !== 'all' || filterOutcome !== 'all';
+
   return (
     <View style={styles.container}>
+      {/* Filter Bar */}
+      <View style={styles.filterBar}>
+        <TouchableOpacity
+          style={[styles.filterChip, filterSession !== 'all' && styles.filterChipActive]}
+          onPress={() => setFilterSession(filterSession === 'all' ? SESSIONS[0].id : 'all')}
+        >
+          <Text style={[styles.filterChipText, filterSession !== 'all' && styles.filterChipTextActive]}>
+            {filterSession === 'all' ? 'All Sessions' : SESSIONS.find(s => s.id === filterSession)?.name}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.filterChip, filterSetup !== 'all' && styles.filterChipActive]}
+          onPress={() => setFilterSetup(filterSetup === 'all' ? 'continuation' : 'all')}
+        >
+          <Text style={[styles.filterChipText, filterSetup !== 'all' && styles.filterChipTextActive]}>
+            {filterSetup === 'all' ? 'All Setups' : filterSetup.replace('_', ' ')}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.filterChip, filterOutcome !== 'all' && styles.filterChipActive]}
+          onPress={() => setFilterOutcome(filterOutcome === 'all' ? 'win' : 'all')}
+        >
+          <Text style={[styles.filterChipText, filterOutcome !== 'all' && styles.filterChipTextActive]}>
+            {filterOutcome === 'all' ? 'All Outcomes' : filterOutcome.toUpperCase()}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Inline Stats (shown when filters active) */}
+      {hasActiveFilters && filteredTrades.length > 0 && (
+        <Card>
+          <View style={styles.statsRow}>
+            <Stat value={filterStats.trades} label="Trades" />
+            <Stat value={`${filterStats.winRate.toFixed(0)}%`} label="Win Rate" />
+            <Stat value={`${filterStats.totalPnL >= 0 ? '+' : ''}${filterStats.totalPnL.toFixed(0)}`} label="P&L" />
+            <Stat value={filterStats.avgRR.toFixed(1)} label="Avg RR" />
+          </View>
+        </Card>
+      )}
+
       <FlatList
-        data={trades}
+        data={filteredTrades}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <TradeCard
@@ -335,6 +407,38 @@ export default function JournalScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg.primary },
+  filterBar: {
+    flexDirection: 'row',
+    padding: spacing.sm,
+    gap: spacing.sm,
+    backgroundColor: colors.bg.secondary,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.bg.tertiary,
+  },
+  filterChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.bg.tertiary,
+    borderRadius: radii.full,
+    borderWidth: 1,
+    borderColor: colors.text.tertiary,
+  },
+  filterChipActive: {
+    backgroundColor: colors.semantic.success,
+    borderColor: colors.semantic.success,
+  },
+  filterChipText: {
+    ...typography.caption,
+    fontWeight: '600',
+    color: colors.text.secondary,
+  },
+  filterChipTextActive: {
+    color: '#FFF',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
   list: { padding: spacing.md },
   empty: { alignItems: 'center', marginTop: 100 },
   emptyText: { ...typography.body, color: colors.text.primary },
