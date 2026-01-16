@@ -39,6 +39,7 @@ export default function JournalScreen() {
   const [notes, setNotes] = useState('');
   const [confirmations, setConfirmations] = useState<Confirmation[]>([]);
   const [images, setImages] = useState<string[]>([]);
+  const [quickMode, setQuickMode] = useState(true); // Quick vs full form mode
 
   useEffect(() => {
     loadTrades();
@@ -62,10 +63,12 @@ export default function JournalScreen() {
     setConfirmations([]);
     setImages([]);
     setEditingTrade(null);
+    setQuickMode(true);
   };
 
   const openAddModal = () => {
     resetForm();
+    setQuickMode(true); // New trades default to quick mode
     setModalVisible(true);
   };
 
@@ -85,6 +88,7 @@ export default function JournalScreen() {
     setNotes(trade.notes);
     setConfirmations(trade.confirmations);
     setImages(trade.images || []);
+    setQuickMode(false); // Editing shows full form
     setModalVisible(true);
   };
 
@@ -205,86 +209,125 @@ export default function JournalScreen() {
 
       <FormModal
         visible={modalVisible}
-        title={editingTrade ? 'Edit Trade' : 'New Trade'}
+        title={editingTrade ? 'Edit Trade' : (quickMode ? 'Quick Add' : 'New Trade')}
         onClose={() => setModalVisible(false)}
         onSave={handleSave}
         onDelete={editingTrade ? handleDelete : undefined}
       >
-        <FormLabel>Killzone</FormLabel>
-        <OptionPicker
-          options={DEFAULT_KILLZONES.map((kz) => ({ value: kz.id, label: kz.name, color: kz.color }))}
-          selected={killzone}
-          onSelect={(kz) => {
-            setKillzone(kz);
-            const kzInfo = DEFAULT_KILLZONES.find((k) => k.id === kz);
-            if (kzInfo) setSession(kzInfo.session);
-          }}
-        />
+        {quickMode && !editingTrade ? (
+          <>
+            {/* Quick Mode: Essential fields only */}
+            <FormField label="Symbol" value={symbol} onChangeText={setSymbol} placeholder="ES, NQ, BTC..." />
 
-        <FormLabel>Direction</FormLabel>
-        <OptionPicker
-          options={[
-            { value: 'long' as TradeDirection, label: 'LONG', color: colors.semantic.success },
-            { value: 'short' as TradeDirection, label: 'SHORT', color: colors.semantic.error },
-          ]}
-          selected={direction}
-          onSelect={setDirection}
-        />
+            <FormLabel>Direction</FormLabel>
+            <OptionPicker
+              options={[
+                { value: 'long' as TradeDirection, label: 'LONG', color: colors.semantic.success },
+                { value: 'short' as TradeDirection, label: 'SHORT', color: colors.semantic.error },
+              ]}
+              selected={direction}
+              onSelect={setDirection}
+            />
 
-        <FormLabel>Setup Type</FormLabel>
-        <OptionPicker
-          options={SETUP_TYPES.map((s) => ({ value: s, label: s.replace('_', ' ') }))}
-          selected={setupType}
-          onSelect={setSetupType}
-        />
+            <FormLabel>Outcome</FormLabel>
+            <OptionPicker
+              options={OUTCOMES.map((o) => ({ value: o, label: o.toUpperCase(), color: outcomeColor(o) }))}
+              selected={outcome}
+              onSelect={setOutcome}
+            />
 
-        <FormLabel>Confirmations</FormLabel>
-        <OptionPicker
-          options={CONFIRMATIONS.map((c) => ({ value: c, label: c.toUpperCase() }))}
-          selected={confirmations}
-          onSelect={toggleConfirmation}
-          multiple
-        />
+            <FormField label="P&L" value={pnl} onChangeText={setPnl} keyboardType="decimal-pad" placeholder="0.00" />
 
-        <FormField label="Symbol" value={symbol} onChangeText={setSymbol} placeholder="ES, NQ, BTC..." />
-
-        <View style={styles.priceRow}>
-          <View style={styles.priceField}>
-            <FormField label="Entry" value={entry} onChangeText={setEntry} keyboardType="decimal-pad" placeholder="0.00" />
-          </View>
-          <View style={styles.priceField}>
-            <FormField label="Stop Loss" value={stopLoss} onChangeText={setStopLoss} keyboardType="decimal-pad" placeholder="0.00" />
-          </View>
-          <View style={styles.priceField}>
-            <FormField label="Take Profit" value={takeProfit} onChangeText={setTakeProfit} keyboardType="decimal-pad" placeholder="0.00" />
-          </View>
-        </View>
-
-        <FormLabel>Outcome</FormLabel>
-        <OptionPicker
-          options={OUTCOMES.map((o) => ({ value: o, label: o.toUpperCase(), color: outcomeColor(o) }))}
-          selected={outcome}
-          onSelect={setOutcome}
-        />
-
-        <FormField label="P&L (optional)" value={pnl} onChangeText={setPnl} keyboardType="decimal-pad" placeholder="0.00" />
-
-        <FormField label="Notes" value={notes} onChangeText={setNotes} placeholder="Trade notes..." multiline />
-
-        <FormLabel>Screenshots</FormLabel>
-        <View style={styles.imagesContainer}>
-          {images.map((uri, index) => (
-            <TouchableOpacity key={index} onPress={() => removeImage(uri)} style={styles.imageWrapper}>
-              <Image source={{ uri }} style={styles.thumbnail} />
-              <View style={styles.removeImageBadge}>
-                <Text style={styles.removeImageText}>×</Text>
-              </View>
+            <TouchableOpacity style={styles.moreDetailsBtn} onPress={() => setQuickMode(false)}>
+              <Text style={styles.moreDetailsText}>+ More Details</Text>
             </TouchableOpacity>
-          ))}
-          <TouchableOpacity style={styles.addImageBtn} onPress={pickImage}>
-            <Text style={styles.addImageText}>+</Text>
-          </TouchableOpacity>
-        </View>
+          </>
+        ) : (
+          <>
+            {/* Full Mode: All fields */}
+            {!editingTrade && (
+              <TouchableOpacity style={styles.quickModeBtn} onPress={() => setQuickMode(true)}>
+                <Text style={styles.quickModeText}>← Quick Add</Text>
+              </TouchableOpacity>
+            )}
+
+            <FormLabel>Killzone</FormLabel>
+            <OptionPicker
+              options={DEFAULT_KILLZONES.map((kz) => ({ value: kz.id, label: kz.name, color: kz.color }))}
+              selected={killzone}
+              onSelect={(kz) => {
+                setKillzone(kz);
+                const kzInfo = DEFAULT_KILLZONES.find((k) => k.id === kz);
+                if (kzInfo) setSession(kzInfo.session);
+              }}
+            />
+
+            <FormLabel>Direction</FormLabel>
+            <OptionPicker
+              options={[
+                { value: 'long' as TradeDirection, label: 'LONG', color: colors.semantic.success },
+                { value: 'short' as TradeDirection, label: 'SHORT', color: colors.semantic.error },
+              ]}
+              selected={direction}
+              onSelect={setDirection}
+            />
+
+            <FormLabel>Setup Type</FormLabel>
+            <OptionPicker
+              options={SETUP_TYPES.map((s) => ({ value: s, label: s.replace('_', ' ') }))}
+              selected={setupType}
+              onSelect={setSetupType}
+            />
+
+            <FormLabel>Confirmations</FormLabel>
+            <OptionPicker
+              options={CONFIRMATIONS.map((c) => ({ value: c, label: c.toUpperCase() }))}
+              selected={confirmations}
+              onSelect={toggleConfirmation}
+              multiple
+            />
+
+            <FormField label="Symbol" value={symbol} onChangeText={setSymbol} placeholder="ES, NQ, BTC..." />
+
+            <View style={styles.priceRow}>
+              <View style={styles.priceField}>
+                <FormField label="Entry" value={entry} onChangeText={setEntry} keyboardType="decimal-pad" placeholder="0.00" />
+              </View>
+              <View style={styles.priceField}>
+                <FormField label="Stop Loss" value={stopLoss} onChangeText={setStopLoss} keyboardType="decimal-pad" placeholder="0.00" />
+              </View>
+              <View style={styles.priceField}>
+                <FormField label="Take Profit" value={takeProfit} onChangeText={setTakeProfit} keyboardType="decimal-pad" placeholder="0.00" />
+              </View>
+            </View>
+
+            <FormLabel>Outcome</FormLabel>
+            <OptionPicker
+              options={OUTCOMES.map((o) => ({ value: o, label: o.toUpperCase(), color: outcomeColor(o) }))}
+              selected={outcome}
+              onSelect={setOutcome}
+            />
+
+            <FormField label="P&L (optional)" value={pnl} onChangeText={setPnl} keyboardType="decimal-pad" placeholder="0.00" />
+
+            <FormField label="Notes" value={notes} onChangeText={setNotes} placeholder="Trade notes..." multiline />
+
+            <FormLabel>Screenshots</FormLabel>
+            <View style={styles.imagesContainer}>
+              {images.map((uri, index) => (
+                <TouchableOpacity key={index} onPress={() => removeImage(uri)} style={styles.imageWrapper}>
+                  <Image source={{ uri }} style={styles.thumbnail} />
+                  <View style={styles.removeImageBadge}>
+                    <Text style={styles.removeImageText}>×</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity style={styles.addImageBtn} onPress={pickImage}>
+                <Text style={styles.addImageText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
       </FormModal>
     </View>
   );
@@ -325,4 +368,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   addImageText: { color: colors.text.secondary, fontSize: 28 },
+  moreDetailsBtn: {
+    marginTop: spacing.md,
+    padding: spacing.md,
+    backgroundColor: colors.bg.tertiary,
+    borderRadius: radii.md,
+    alignItems: 'center',
+  },
+  moreDetailsText: {
+    ...typography.body,
+    color: colors.semantic.success,
+    fontWeight: '600',
+  },
+  quickModeBtn: {
+    marginBottom: spacing.sm,
+    padding: spacing.sm,
+    alignItems: 'flex-start',
+  },
+  quickModeText: {
+    ...typography.caption,
+    color: colors.semantic.success,
+    fontWeight: '600',
+  },
 });
