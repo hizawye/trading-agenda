@@ -112,6 +112,19 @@ export default function JournalScreen() {
       const tpNum = parseFloat(takeProfit) || 0;
       const rr = calculateRiskReward(entryNum, slNum, tpNum);
 
+      // Handle P&L sign based on outcome
+      let pnlValue: number | undefined = undefined;
+      if (pnl) {
+        const pnlNum = parseFloat(pnl);
+        if (outcome === 'loss') {
+          pnlValue = -Math.abs(pnlNum); // Always negative for losses
+        } else if (outcome === 'win') {
+          pnlValue = Math.abs(pnlNum); // Always positive for wins
+        } else {
+          pnlValue = pnlNum; // Keep as-is for breakeven/pending
+        }
+      }
+
       const tradeData = {
         timestamp: Date.now(),
         session,
@@ -124,7 +137,7 @@ export default function JournalScreen() {
         stopLoss: slNum,
         takeProfit: tpNum,
         outcome,
-        pnl: pnl ? parseFloat(pnl) : undefined,
+        pnl: pnlValue,
         riskReward: rr,
         images,
         notes,
