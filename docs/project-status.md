@@ -1,7 +1,7 @@
 # Trading Agenda - Project Status
 
 ## Current State
-**Phase:** UX Redesign Phase 1 Complete ✅
+**Phase:** UX Redesign Phase 3 Complete ✅
 **Last Updated:** 2026-01-16
 
 ## What's Done
@@ -9,10 +9,19 @@
 - Core data models (Trade, Alert, Rule) with killzone support
 - SQLite database setup with CRUD operations + killzone migration
 - Zustand state management stores (trade, alert, rule, settings)
-- **3-Tab Navigation (Phase 1):**
+- **UX Phase 1 - 3-Tab Navigation:**
   - Today: current session, next alert, quick stats, session performance, add trade CTA
-  - Journal: trade list + filters (unchanged)
+  - Journal: trade list with filters and inline stats
   - More: menu hub for Analytics/Rules/Alerts/Settings
+- **UX Phase 2 - Smart Trade Entry:**
+  - Quick mode: 4 essential fields (Symbol, Direction, Outcome, P&L)
+  - Smart defaults: auto-detect current killzone, default setup to continuation
+  - "+ More Details" expands to full form with all fields
+  - 10s logging vs 30s previously
+- **UX Phase 3 - Contextual Analytics:**
+  - Filter bar: Session, Setup, Outcome chips with toggle
+  - Inline stats card: Trades, Win Rate, Total P&L, Avg RR (shown when filtering)
+  - Context-aware metrics for filtered subsets
 - **Design System:**
   - Centralized tokens: colors, typography (4 levels), spacing, radii
   - Utility functions: pnlColor, winRateColor, outcomeColor, sessionColor
@@ -22,7 +31,7 @@
   - Card, Stat, FormField, FAB, TradeCard, StatRow, SessionBadge, ScreenLayout
 - **All screens using design system:**
   - TodayScreen: current session hero, alert countdown, quick stats
-  - JournalScreen: uses TradeCard, FormModal, OptionPicker, FormField
+  - JournalScreen: quick add, filters, inline stats, trade cards
   - AnalyticsScreen: uses Card, Stat, StatRow
   - AlertsScreen: uses FormModal, FormField, FAB
   - RulesScreen: uses FormModal, OptionPicker, FAB
@@ -36,8 +45,6 @@
 - EAS Build configuration ready
 
 ## What's Not Done Yet
-- [ ] UX Phase 2: Smart trade entry flow (quick vs. full mode)
-- [ ] UX Phase 3: Contextual analytics (filter bar, inline stats)
 - [ ] UX Phase 4: Rules integration (pre-trade checklist)
 - [ ] Image annotation/drawing on trade screenshots
 - [ ] Export/import data (JSON/CSV)
@@ -48,8 +55,8 @@
 - None currently identified
 
 ## Where to Start Next
-1. **UX Phase 2:** Smart trade form (quick add with 4 fields, expandable details)
-2. **UX Phase 3:** Add filter bar to Journal, inline stats after filtering
-3. **UX Phase 4:** Pre-trade rules checklist in trade form
-4. Add image annotation to trade screenshots
-5. Implement export/import functionality
+1. **UX Phase 4:** Pre-trade rules checklist in trade form
+2. Add image annotation to trade screenshots
+3. Implement export/import functionality
+4. Add calendar heat map to analytics
+5. Test on real device

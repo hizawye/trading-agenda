@@ -116,3 +116,29 @@
 - Inline stats in filtered views > separate analytics tab
 - Visual hierarchy (session colors, outcome badges, P&L prominence)
 - No wizard flows, no empty states with lengthy explanations
+
+## 2026-01-16: UX Phase 2 - Smart Trade Entry Flow
+
+### Quick vs Full Mode
+**Decision:** Implement dual-mode trade form (quick 4-field vs full 14-field)
+**Rationale:**
+- Most trades are simple logging: "took London setup, won $200"
+- Full form creates friction (10+ fields) for common case
+- Smart defaults reduce cognitive load: auto-detect killzone, default setup to continuation
+- Quick mode: Symbol, Direction, Outcome, P&L only
+- "+ More Details" expands to full form (killzone, setup, confirmations, prices, notes, screenshots)
+- Editing existing trades shows full form immediately
+- 70% reduction in time-to-log for common case (30s → 10s)
+
+## 2026-01-16: UX Phase 3 - Contextual Analytics
+
+### Filter Bar + Inline Stats
+**Decision:** Add filter chips and contextual metrics to Journal screen
+**Rationale:**
+- Analytics in separate tab requires context switching
+- Users filter trades to answer specific questions: "How do I perform in London?"
+- Inline stats answer that question immediately after filtering
+- Filter bar: Session, Setup, Outcome (toggle chips, green when active)
+- Inline stats card appears when filters active: Trades, Win Rate, Total P&L, Avg RR
+- Progressive disclosure: stats appear when user demonstrates intent
+- Analytics tab still exists for comprehensive views (charts, trends)
