@@ -29,6 +29,9 @@ app.post('/api/login', async (req, res) => {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+        'Origin': 'https://manager.maven.markets',
+        'Referer': 'https://manager.maven.markets/login',
       },
       body: JSON.stringify({
         email,
@@ -87,6 +90,9 @@ app.all('/api/maven/*', async (req, res) => {
         'cookie': `co-auth=${token}`,
         'accept': 'application/json, text/plain, */*',
         'content-type': 'application/json',
+        'user-agent': 'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+        'origin': 'https://manager.maven.markets',
+        'referer': 'https://manager.maven.markets/app/trade',
       },
     };
 
