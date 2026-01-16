@@ -38,33 +38,38 @@ export function FormModal({
           style={styles.keyboardView}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
+          {/* Header: Title and Close */}
           <View style={styles.header}>
-            <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <Text style={styles.cancelBtn}>Cancel</Text>
-            </TouchableOpacity>
             <Text style={styles.title}>{title}</Text>
-            <TouchableOpacity
-              onPress={onSave}
-              disabled={saveDisabled}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Text style={[styles.saveBtn, saveDisabled && styles.saveBtnDisabled]}>Save</Text>
+            <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <Text style={styles.closeBtn}>✕</Text>
             </TouchableOpacity>
           </View>
 
+          {/* Content */}
           <ScrollView
             style={styles.content}
             contentContainerStyle={styles.contentContainer}
             keyboardShouldPersistTaps="handled"
           >
             {children}
+          </ScrollView>
 
+          {/* Bottom Actions */}
+          <View style={styles.footer}>
             {onDelete && (
               <TouchableOpacity style={styles.deleteBtn} onPress={onDelete}>
                 <Text style={styles.deleteText}>Delete</Text>
               </TouchableOpacity>
             )}
-          </ScrollView>
+            <TouchableOpacity
+              style={[styles.saveBtn, saveDisabled && styles.saveBtnDisabled]}
+              onPress={onSave}
+              disabled={saveDisabled}
+            >
+              <Text style={[styles.saveBtnText, saveDisabled && styles.saveBtnTextDisabled]}>Save</Text>
+            </TouchableOpacity>
+          </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
     </Modal>
@@ -91,18 +96,12 @@ const styles = StyleSheet.create({
   title: {
     ...typography.body,
     fontWeight: '600',
+    fontSize: 18,
   },
-  cancelBtn: {
-    ...typography.body,
-    color: colors.text.secondary,
-  },
-  saveBtn: {
-    ...typography.body,
-    color: colors.semantic.success,
-    fontWeight: '600',
-  },
-  saveBtnDisabled: {
+  closeBtn: {
+    fontSize: 24,
     color: colors.text.tertiary,
+    fontWeight: '300',
   },
   content: {
     flex: 1,
@@ -111,12 +110,43 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     paddingBottom: spacing.xxl,
   },
-  deleteBtn: {
-    marginTop: spacing.xl,
+  footer: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    padding: spacing.md,
+    paddingBottom: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.bg.tertiary,
+    backgroundColor: colors.bg.primary,
+  },
+  saveBtn: {
+    flex: 1,
     paddingVertical: spacing.md,
-    alignItems: 'center',
+    backgroundColor: colors.semantic.success,
     borderRadius: radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveBtnDisabled: {
+    backgroundColor: colors.bg.tertiary,
+  },
+  saveBtnText: {
+    ...typography.body,
+    color: '#FFF',
+    fontWeight: '600',
+  },
+  saveBtnTextDisabled: {
+    color: colors.text.tertiary,
+  },
+  deleteBtn: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
     backgroundColor: colors.bg.secondary,
+    borderRadius: radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.semantic.error,
   },
   deleteText: {
     ...typography.body,
