@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, Image } from
 import * as ImagePicker from 'expo-image-picker';
 import { Paths, File as ExpoFile } from 'expo-file-system';
 import { useTradeStore } from '../stores/tradeStore';
+import { useRuleStore } from '../stores/ruleStore';
 import { Trade, Session, SetupType, TradeDirection, TradeOutcome, Confirmation, Killzone } from '../types';
 import { getSessionById, getCurrentSession } from '../constants/sessions';
 import { DEFAULT_KILLZONES, getCurrentKillzone } from '../constants/killzones';
@@ -24,8 +25,10 @@ const OUTCOMES: TradeOutcome[] = ['win', 'loss', 'breakeven', 'pending'];
 
 export default function JournalScreen() {
   const { trades, loadTrades, addTrade, updateTrade, deleteTrade } = useTradeStore();
+  const { rules, loadRules } = useRuleStore();
   const [modalVisible, setModalVisible] = useState(false);
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
+  const [showRules, setShowRules] = useState(true);
 
   // Form state
   const [session, setSession] = useState<Session>('ny_am');
@@ -51,6 +54,7 @@ export default function JournalScreen() {
 
   useEffect(() => {
     loadTrades();
+    loadRules();
   }, []);
 
   const resetForm = () => {
@@ -77,6 +81,7 @@ export default function JournalScreen() {
   const openAddModal = () => {
     resetForm();
     setQuickMode(true); // New trades default to quick mode
+    setShowRules(true); // Show rules reminder
     setModalVisible(true);
   };
 
@@ -286,6 +291,26 @@ export default function JournalScreen() {
         onSave={handleSave}
         onDelete={editingTrade ? handleDelete : undefined}
       >
+        {/* Pre-Trade Rules Reminder (dismissible) */}
+        {!editingTrade && showRules && rules.filter(r => r.active).length > 0 && (
+          <View style={styles.rulesReminder}>
+            <View style={styles.rulesHeader}>
+              <Text style={styles.rulesTitle}>📋 Active Rules ({rules.filter(r => r.active).length})</Text>
+              <TouchableOpacity onPress={() => setShowRules(false)}>
+                <Text style={styles.rulesDismiss}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.rulesList}>
+              {rules.filter(r => r.active).slice(0, 3).map((rule) => (
+                <Text key={rule.id} style={styles.ruleItem}>• {rule.rule}</Text>
+              ))}
+              {rules.filter(r => r.active).length > 3 && (
+                <Text style={styles.rulesMore}>+{rules.filter(r => r.active).length - 3} more...</Text>
+              )}
+            </View>
+          </View>
+        )}
+
         {quickMode && !editingTrade ? (
           <>
             {/* Quick Mode: Essential fields only */}
@@ -493,5 +518,40 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.semantic.success,
     fontWeight: '600',
+  },
+  rulesReminder: {
+    backgroundColor: colors.bg.tertiary,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.semantic.warning,
+  },
+  rulesHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  rulesTitle: {
+    ...typography.body,
+    fontWeight: '600',
+    color: colors.text.primary,
+  },
+  rulesDismiss: {
+    ...typography.title,
+    color: colors.text.tertiary,
+  },
+  rulesList: {
+    gap: spacing.xs,
+  },
+  ruleItem: {
+    ...typography.caption,
+    color: colors.text.secondary,
+  },
+  rulesMore: {
+    ...typography.caption,
+    color: colors.text.tertiary,
+    fontStyle: 'italic',
   },
 });
