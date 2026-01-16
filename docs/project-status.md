@@ -1,7 +1,7 @@
 # Trading Agenda - Project Status
 
 ## Current State
-**Phase:** UX Redesign Phase 3 Complete ✅
+**Phase:** UX Redesign Complete (Phases 1-4) ✅
 **Last Updated:** 2026-01-16
 
 ## What's Done
@@ -22,6 +22,11 @@
   - Filter bar: Session, Setup, Outcome chips with toggle
   - Inline stats card: Trades, Win Rate, Total P&L, Avg RR (shown when filtering)
   - Context-aware metrics for filtered subsets
+- **UX Phase 4 - Rules Integration:**
+  - Pre-trade rules reminder in Quick Add (dismissible)
+  - Shows top 3 active rules with count
+  - Orange left border, unobtrusive coaching layer
+  - Only appears for new trades, not edits
 - **Design System:**
   - Centralized tokens: colors, typography (4 levels), spacing, radii
   - Utility functions: pnlColor, winRateColor, outcomeColor, sessionColor
@@ -45,7 +50,6 @@
 - EAS Build configuration ready
 
 ## What's Not Done Yet
-- [ ] UX Phase 4: Rules integration (pre-trade checklist)
 - [ ] Image annotation/drawing on trade screenshots
 - [ ] Export/import data (JSON/CSV)
 - [ ] Calendar heat map in analytics
@@ -55,8 +59,8 @@
 - None currently identified
 
 ## Where to Start Next
-1. **UX Phase 4:** Pre-trade rules checklist in trade form
-2. Add image annotation to trade screenshots
-3. Implement export/import functionality
-4. Add calendar heat map to analytics
-5. Test on real device
+1. Add image annotation to trade screenshots
+2. Implement export/import functionality
+3. Add calendar heat map to analytics
+4. Test on real device
+5. Performance testing with larger datasets

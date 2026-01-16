@@ -142,3 +142,26 @@
 - Inline stats card appears when filters active: Trades, Win Rate, Total P&L, Avg RR
 - Progressive disclosure: stats appear when user demonstrates intent
 - Analytics tab still exists for comprehensive views (charts, trends)
+
+## 2026-01-16: UX Phase 4 - Rules Integration
+
+### Pre-Trade Rules Reminder (Dismissible)
+**Decision:** Show active rules as dismissible reminder in Quick Add form
+**Rationale:**
+- Rules tab exists but disconnected from journaling workflow
+- Users forget their own rules during live trading (emotional state)
+- Interrupting with forced checklist breaks "quick add" promise
+- Dismissible reminder balances discipline with speed
+- Shows top 3 active rules + count, orange left border for visibility
+- Only appears for new trades (not editing) to avoid annoyance
+- Users can X dismiss if already checked rules externally
+- Passive coaching layer: visible but not blocking
+
+### Why Not Full Checklist?
+**Decision:** Chose passive reminder over forced checkbox confirmation
+**Rationale:**
+- Quick Add goal: 10s logging, not 30s+ workflow
+- ICT traders already disciplined, need nudge not babysitting
+- Forced checklist would reintroduce friction removed in Phase 2
+- Trust user to self-enforce after being reminded
+- Can revisit with opt-in "strict mode" if users request
