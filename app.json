@@ -47,14 +47,7 @@
           "cameraPermission": "Allow Trading Agenda to capture trade screenshots"
         }
       ],
-      [
-        "expo-notifications",
-        {
-          "sounds": [
-            "notification_sound.wav"
-          ]
-        }
-      ],
+      "expo-notifications",
       "sentry-expo"
     ]
   }
