@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UserSettings, SessionConfig, KillzoneInfo, Session, Killzone, TimeRange } from '../types';
 import { SESSIONS } from '../constants/sessions';
 import { DEFAULT_KILLZONES } from '../constants/killzones';
+import logger from '../lib/logger';
 
 const STORAGE_KEY = 'user-settings';
 
@@ -59,7 +60,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         set({ settings: defaults, loaded: true });
       }
     } catch (error) {
-      console.error('Failed to load settings:', error);
+      logger.error('Failed to load settings:', error as Error);
       // Fallback to defaults
       set({ settings: getDefaultSettings(), loaded: true });
     }
@@ -79,7 +80,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
       set({ settings: updated });
     } catch (error) {
-      console.error('Failed to update session times:', error);
+      logger.error('Failed to update session times:', error as Error);
     }
   },
 
@@ -97,7 +98,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
       set({ settings: updated });
     } catch (error) {
-      console.error('Failed to update killzone times:', error);
+      logger.error('Failed to update killzone times:', error as Error);
     }
   },
 
@@ -107,7 +108,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(defaults));
       set({ settings: defaults });
     } catch (error) {
-      console.error('Failed to reset settings:', error);
+      logger.error('Failed to reset settings:', error as Error);
     }
   },
 

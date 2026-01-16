@@ -1,5 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 import { Trade, Alert, Rule, Killzone } from '../types';
+import logger from './logger';
 
 let db: SQLite.SQLiteDatabase | null = null;
 
@@ -83,7 +84,7 @@ const migrateToKillzones = async () => {
       console.log('Migration complete!');
     }
   } catch (error) {
-    console.error('Migration error:', error);
+    logger.error('Migration error:', error as Error);
   }
 };
 

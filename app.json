@@ -22,7 +22,13 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.hizawye.tradingagenda"
+      "package": "com.hizawye.tradingagenda",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.SCHEDULE_EXACT_ALARM"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -33,7 +39,23 @@
       }
     },
     "plugins": [
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Trading Agenda to access photos for trade screenshots",
+          "cameraPermission": "Allow Trading Agenda to capture trade screenshots"
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "sounds": [
+            "default"
+          ]
+        }
+      ],
+      "sentry-expo"
     ]
   }
 }
