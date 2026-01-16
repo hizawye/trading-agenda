@@ -106,38 +106,43 @@ export default function JournalScreen() {
   };
 
   const handleSave = async () => {
-    const entryNum = parseFloat(entry) || 0;
-    const slNum = parseFloat(stopLoss) || 0;
-    const tpNum = parseFloat(takeProfit) || 0;
-    const rr = calculateRiskReward(entryNum, slNum, tpNum);
+    try {
+      const entryNum = parseFloat(entry) || 0;
+      const slNum = parseFloat(stopLoss) || 0;
+      const tpNum = parseFloat(takeProfit) || 0;
+      const rr = calculateRiskReward(entryNum, slNum, tpNum);
 
-    const tradeData = {
-      timestamp: Date.now(),
-      session,
-      timeWindow,
-      killzone,
-      setupType,
-      direction,
-      symbol,
-      entry: entryNum,
-      stopLoss: slNum,
-      takeProfit: tpNum,
-      outcome,
-      pnl: pnl ? parseFloat(pnl) : undefined,
-      riskReward: rr,
-      images,
-      notes,
-      confirmations,
-    };
+      const tradeData = {
+        timestamp: Date.now(),
+        session,
+        timeWindow,
+        killzone,
+        setupType,
+        direction,
+        symbol,
+        entry: entryNum,
+        stopLoss: slNum,
+        takeProfit: tpNum,
+        outcome,
+        pnl: pnl ? parseFloat(pnl) : undefined,
+        riskReward: rr,
+        images,
+        notes,
+        confirmations,
+      };
 
-    if (editingTrade) {
-      await updateTrade({ ...editingTrade, ...tradeData });
-    } else {
-      await addTrade(tradeData);
+      if (editingTrade) {
+        await updateTrade({ ...editingTrade, ...tradeData });
+      } else {
+        await addTrade(tradeData);
+      }
+
+      setModalVisible(false);
+      resetForm();
+    } catch (error) {
+      console.error('Failed to save trade:', error);
+      Alert.alert('Error', 'Failed to save trade. Please try again.');
     }
-
-    setModalVisible(false);
-    resetForm();
   };
 
   const handleDelete = () => {
@@ -290,7 +295,7 @@ export default function JournalScreen() {
         onClose={() => setModalVisible(false)}
         onSave={handleSave}
         onDelete={editingTrade ? handleDelete : undefined}
-        saveDisabled={!symbol.trim() || !entry || !stopLoss || !takeProfit}
+        saveDisabled={quickMode ? !symbol.trim() : (!symbol.trim() || !entry || !stopLoss || !takeProfit)}
       >
         {/* Pre-Trade Rules Reminder (dismissible) */}
         {!editingTrade && showRules && rules.filter(r => r.active).length > 0 && (
