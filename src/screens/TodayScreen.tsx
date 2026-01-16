@@ -13,7 +13,7 @@ import { Stat } from '../components/Stat';
 import { SessionBadge } from '../components/SessionBadge';
 import { StatRow } from '../components/StatRow';
 
-export default function HomeScreen({ navigation }: any) {
+export default function TodayScreen({ navigation }: any) {
   const { trades, loadTrades, getTodayTrades, getTodayPnL, getWinRate } = useTradeStore();
   const { loadAlerts, getNextAlert, initializeNotifications } = useAlertStore();
   const [currentTime, setCurrentTime] = useState(getNYTime());
@@ -109,7 +109,7 @@ export default function HomeScreen({ navigation }: any) {
       {/* Quick Add Button */}
       <TouchableOpacity
         style={styles.addButton}
-        onPress={() => navigation.navigate('Journal', { screen: 'AddTrade' })}
+        onPress={() => navigation.navigate('Journal')}
       >
         <Text style={styles.addButtonText}>+ Add Trade</Text>
       </TouchableOpacity>
