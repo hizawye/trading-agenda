@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const fetch = require('node-fetch');
+const cloudscraper = require('cloudscraper');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -17,58 +17,40 @@ app.get('/', (req, res) => {
   res.json({ status: 'ok', message: 'Maven Trading Proxy Server' });
 });
 
-// Login endpoint
+// Login endpoint with Cloudflare bypass
 app.post('/api/login', async (req, res) => {
   try {
     const { email, password, partnerId } = req.body;
 
     console.log('Login request:', { email, partnerId });
 
-    const response = await fetch(`${MAVEN_API}/mtr-core-edge/login`, {
+    const response = await cloudscraper({
       method: 'POST',
+      url: `${MAVEN_API}/mtr-core-edge/login`,
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
-        'Origin': 'https://manager.maven.markets',
-        'Referer': 'https://manager.maven.markets/login',
       },
       body: JSON.stringify({
         email,
         password,
         partnerId: parseInt(partnerId || '117', 10),
       }),
+      json: true,
     });
 
-    const contentType = response.headers.get('content-type');
-    let data;
-
-    // Check if response is JSON
-    if (contentType && contentType.includes('application/json')) {
-      data = await response.json();
-    } else {
-      const text = await response.text();
-      console.error('Non-JSON response from Maven:', text.substring(0, 500));
-      return res.status(500).json({
-        error: 'Invalid response from Maven API',
-        details: text.substring(0, 200)
-      });
-    }
-
-    if (!response.ok) {
-      console.error('Login failed:', response.status, data);
-      return res.status(response.status).json(data);
-    }
-
     console.log('Login successful');
-    res.json(data);
+    res.json(response);
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: error.message, stack: error.stack });
+    console.error('Login error:', error.message);
+    res.status(500).json({
+      error: error.message,
+      details: error.error ? error.error.substring(0, 200) : 'No details'
+    });
   }
 });
 
-// Generic proxy for authenticated requests
+// Generic proxy for authenticated requests with Cloudflare bypass
 app.all('/api/maven/*', async (req, res) => {
   try {
     const { token, tradingapitoken } = req.headers;
@@ -85,15 +67,14 @@ app.all('/api/maven/*', async (req, res) => {
 
     const options = {
       method: req.method,
+      url: url,
       headers: {
         'auth-trading-api': tradingapitoken,
         'cookie': `co-auth=${token}`,
         'accept': 'application/json, text/plain, */*',
         'content-type': 'application/json',
-        'user-agent': 'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
-        'origin': 'https://manager.maven.markets',
-        'referer': 'https://manager.maven.markets/app/trade',
       },
+      json: true,
     };
 
     // Add body for POST requests
@@ -101,31 +82,14 @@ app.all('/api/maven/*', async (req, res) => {
       options.body = JSON.stringify(req.body);
     }
 
-    const response = await fetch(url, options);
-
-    const contentType = response.headers.get('content-type');
-    let data;
-
-    if (contentType && contentType.includes('application/json')) {
-      data = await response.json();
-    } else {
-      const text = await response.text();
-      console.error('Non-JSON response:', text.substring(0, 500));
-      return res.status(500).json({
-        error: 'Invalid response from Maven API',
-        details: text.substring(0, 200)
-      });
-    }
-
-    if (!response.ok) {
-      console.error('API error:', response.status, data);
-      return res.status(response.status).json(data);
-    }
-
-    res.json(data);
+    const response = await cloudscraper(options);
+    res.json(response);
   } catch (error) {
-    console.error('Proxy error:', error);
-    res.status(500).json({ error: error.message, stack: error.stack });
+    console.error('Proxy error:', error.message);
+    res.status(500).json({
+      error: error.message,
+      details: error.error ? error.error.substring(0, 200) : 'No details'
+    });
   }
 });
 
