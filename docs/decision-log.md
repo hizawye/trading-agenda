@@ -329,7 +329,21 @@
 - **Verification:** Android bundle compiled successfully (1153 modules, 2.88 MB .hbc file)
 - No __extends errors, no useLatestCallback errors
 - .mjs files now properly transformed instead of treated as static assets
-- **Result:** FIXED ✅ App now works without removing Sentry
-- Note: Sentry still removed from previous commits, but this proves the technical fix works
-- Can re-add Sentry in future using this Metro configuration
+- **Result:** Partial fix - bundler works, but Expo Go still shows errors
+- Note: Sentry still removed from previous commits
+- Next: Added global polyfill as additional layer
+
+## 2026-01-17: Global Polyfill Layer for tslib Helpers
+
+### Inject tslib Helpers into Global Scope
+**Decision:** Add global polyfill as additional layer on top of Metro .mjs fix
+**Rationale:**
+- Metro .mjs sourceExts fix resolved bundling but Expo Go still showed runtime errors
+- Created src/polyfills.ts to manually inject all 22 tslib helpers into global scope
+- Import polyfills FIRST in index.ts before any other code executes
+- Ensures __extends, __assign, and other helpers available before any module tries to use them
+- **Defense in depth:** Metro config handles bundling, polyfill handles runtime
+- Bundle compiled successfully (1155 modules, 2.91 MB .hbc file)
+- **Result:** Combined Metro config + global polyfill approach
+- Testing in Expo Go required to verify complete fix
 

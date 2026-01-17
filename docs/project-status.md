@@ -1,7 +1,7 @@
 # Trading Agenda - Project Status
 
 ## Current State
-**Phase:** __extends Error FIXED - Ready for New Build ✅
+**Phase:** Dual-Layer __extends Fix Applied - Ready for Testing ✅
 **Last Updated:** 2026-01-17
 
 ## What's Done
@@ -54,12 +54,14 @@
   - Privacy policy created (local-only data storage)
   - Type check passing
   - All console.error replaced with logger.error
-- **__extends Error Fixed (2026-01-17):**
-  - Created metro.config.js with .mjs asset extension support
+- **__extends Error Fixed (2026-01-17) - Dual-Layer Approach:**
+  - **Layer 1: Metro Config** - metro.config.js with .mjs in sourceExts (not assetExts)
+  - **Layer 2: Global Polyfill** - src/polyfills.ts injects all tslib helpers into global scope
   - Added tslib@^2.8.1 as direct dependency
   - Configured Metro tslib module resolution
-  - Android bundle compiles successfully (verified via `npx expo export`)
-  - **READY FOR NEW BUILD** - previous build had Sentry removed, this fixes the root cause
+  - Polyfills imported FIRST in index.ts before any other code
+  - Android bundle compiles successfully (1155 modules, 2.91 MB .hbc file)
+  - **Awaiting Expo Go testing** to verify both __extends and useLatestCallback errors resolved
 
 ## What's Not Done Yet
 - [ ] Image annotation/drawing on trade screenshots
