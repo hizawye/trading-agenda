@@ -270,5 +270,46 @@
 - Solution: `config.resolver.assetExts = [...(config.resolver.assetExts || []), 'mjs']`
 - Allows Metro to properly bundle tslib's ES6 module files
 - Metro server running successfully after change (commit 291a583)
-- Pending: verification in Expo Go that __extends error is resolved
+- **Result:** Did not fix the error - proceeded to Solution 2
+
+## 2026-01-17: Global Polyfill Attempt for __extends Error
+
+### Inject tslib Helpers into Global Scope
+**Decision:** Create src/polyfills.ts to manually inject all tslib helpers globally
+**Rationale:**
+- Metro .mjs resolution fix (Solution 1) didn't work
+- Created polyfill file that assigns all 21 tslib helpers to global object
+- Imported polyfills FIRST in index.ts before any other code
+- Bundle showed `global.__extends = tslib.__extends` being executed
+- **Result:** Did not fix the error - proceeded to Solution 3
+
+## 2026-01-17: Disable importHelpers Attempt for __extends Error
+
+### Inline TypeScript Helpers Instead of Importing
+**Decision:** Set `importHelpers: false` in tsconfig.json
+**Rationale:**
+- Global polyfill (Solution 2) didn't work
+- `importHelpers: true` forces TypeScript to import from tslib package
+- Disabling makes TypeScript inline helper functions directly into bundle
+- Bundle showed `__extends = function __extends(d, b) { ... }` inlined
+- Eliminates dependency on tslib resolution entirely
+- **Result:** Did not fix the error - proceeded to nuclear option
+
+## 2026-01-17: Removed Sentry to Resolve __extends Error (Nuclear Option)
+
+### Complete Sentry Removal
+**Decision:** Remove sentry-expo package entirely from the app
+**Rationale:**
+- All technical solutions failed:
+  1. Metro .mjs resolution fix - didn't work
+  2. Global polyfill injection - didn't work
+  3. Disable importHelpers - didn't work
+- Sentry packages fundamentally incompatible with Metro/Hermes on Android
+- __extends error only occurs because of Sentry's compiled code
+- Removed sentry-expo from package.json (33 packages removed)
+- Removed Sentry.init() from App.tsx
+- Simplified logger.ts to console.error only (no crash reporting)
+- Removed "sentry-expo" from app.json plugins
+- **Trade-off:** No crash reporting in production, but app launches successfully
+- Can revisit crash reporting later with different solution (Crashlytics, etc.)
 
