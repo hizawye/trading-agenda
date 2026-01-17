@@ -226,3 +226,23 @@
 - tslib 1.14.1 stable and compatible with all functionality
 - Avoids complex Metro resolver configuration
 
+
+## 2026-01-17: Preview Build Successfully Generated
+
+### First EAS Build Completion
+**Decision:** Generated preview APK using EAS Build with internal distribution
+**Rationale:**
+- Preview profile allows testing before production release
+- Remote Android credentials managed by Expo for signing
+- Build succeeded with proper Sentry integration
+- APK ready for physical device testing
+- QR code + direct link for easy installation
+
+### Build Configuration
+**Decision:** Use existing EAS build profiles (preview/production)
+**Rationale:**
+- Preview: internal distribution for beta testing
+- Production: auto-increment version, Play Store ready
+- Sentry source maps uploaded automatically during build
+- No custom native code, managed workflow sufficient
+

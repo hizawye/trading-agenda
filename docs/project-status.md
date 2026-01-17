@@ -75,3 +75,21 @@
 3. **Device Testing:** Test APK on physical device (notifications, permissions, camera, SQLite)
 4. **Production Build:** Run `eas build --profile production --platform android`
 5. **Beta Distribution:** Share APK with beta testers
+
+## Latest Build (2026-01-17)
+**Build ID:** da55d707-4f54-427e-b202-cbc3c6b3cbdf
+**Platform:** Android (preview)
+**Status:** Build completed successfully
+**Download:** https://expo.dev/accounts/hizawye/projects/trading-agenda/builds/da55d707-4f54-427e-b202-cbc3c6b3cbdf
+
+### Device Testing Checklist
+- [ ] App launches without crashes
+- [ ] SQLite operations (add/edit/delete trades)
+- [ ] Notifications (alert scheduling, trigger test)
+- [ ] Camera permission (add screenshot to trade)
+- [ ] Photo library permission (select from gallery)
+- [ ] Killzone auto-detection accuracy
+- [ ] Session time indicators (verify NY timezone)
+- [ ] Quick add form (10s target)
+- [ ] Filter bar + inline stats
+- [ ] Rules reminder display

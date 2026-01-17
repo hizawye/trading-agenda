@@ -57,3 +57,13 @@
 - Pre-seeded rules from trading notes
 - Dark mode UI throughout
 - Notification system foundation
+
+## [0.3.1] - 2026-01-17 (First Build)
+
+### Added
+- Preview APK build generated via EAS Build
+- QR code installation method for easy device deployment
+
+### Changed
+- Ready for physical device testing phase
+
