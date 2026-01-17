@@ -1,0 +1,116 @@
+# COMPREHENSIVE FIX PLAN: __extends Runtime Error
+
+## All Possible Solutions (Ranked by Likelihood of Success)
+
+### SOLUTION 1: Global Polyfill Injection ⭐⭐⭐⭐⭐
+**Why:** Force __extends into global scope before Sentry loads
+**Files:** Create `polyfills.ts`, modify `index.ts`
+**Steps:**
+1. Create `polyfills.ts` that manually adds tslib to global
+2. Import polyfills BEFORE anything else in index.ts
+3. Clear Metro cache and rebuild
+
+### SOLUTION 2: Remove Sentry Entirely ⭐⭐⭐⭐⭐
+**Why:** Guaranteed fix, Sentry is the root cause
+**Files:** `package.json`, `App.tsx`, `src/lib/logger.ts`, `app.json`
+**Steps:**
+1. npm uninstall sentry-expo
+2. Remove Sentry.init() from App.tsx
+3. Remove Sentry plugin from app.json
+4. Use console.error for logging
+5. Rebuild
+
+### SOLUTION 3: Patch Sentry Packages ⭐⭐⭐⭐
+**Why:** Modify Sentry to not use __extends
+**Files:** `patches/` directory, `package.json`
+**Steps:**
+1. Install patch-package
+2. Modify Sentry's compiled code to inline helpers
+3. Create patch files
+4. Apply patches on install
+
+### SOLUTION 4: Use @sentry/react-native Instead ⭐⭐⭐⭐
+**Why:** Different package might compile differently
+**Files:** `package.json`, `App.tsx`
+**Steps:**
+1. Uninstall sentry-expo
+2. Install @sentry/react-native + @sentry/integrations
+3. Reconfigure Sentry.init()
+4. Test
+
+### SOLUTION 5: Custom Metro Transformer ⭐⭐⭐
+**Why:** Transform Sentry code during bundling
+**Files:** `metro.config.js`, `transformer.js`
+**Steps:**
+1. Create custom transformer
+2. Detect tslib imports and inline them
+3. Configure Metro to use transformer
+4. Rebuild
+
+### SOLUTION 6: Babel Plugin to Inline Helpers ⭐⭐⭐
+**Why:** Force Babel to inline all class helpers
+**Files:** `babel.config.js`
+**Steps:**
+1. Install @babel/plugin-transform-runtime
+2. Configure to inline helpers
+3. Disable importHelpers in tsconfig
+4. Rebuild
+
+### SOLUTION 7: Delay Sentry Initialization ⭐⭐⭐
+**Why:** Load Sentry after app starts
+**Files:** `App.tsx`
+**Steps:**
+1. Move Sentry.init() inside App component
+2. Call in useEffect with delay
+3. Ensure tslib loads first
+4. Test
+
+### SOLUTION 8: Hermes Engine ⭐⭐
+**Why:** Different JS engine, different behavior
+**Files:** `app.json`
+**Steps:**
+1. Enable Hermes in app.json
+2. Rebuild with EAS
+3. Test (Hermes handles classes differently)
+
+### SOLUTION 9: Downgrade Sentry ⭐⭐
+**Why:** Older versions might not use tslib
+**Files:** `package.json`
+**Steps:**
+1. Try sentry-expo@6.x or @5.x
+2. Rebuild and test each version
+3. Find version that works
+
+### SOLUTION 10: RequireJS Instead of Import ⭐
+**Why:** Different module loading
+**Files:** `App.tsx`
+**Steps:**
+1. Use const Sentry = require('sentry-expo')
+2. Test if dynamic require works differently
+
+## Implementation Order
+
+Will try in this exact order until one works:
+
+1. **Global Polyfill** (quickest, least destructive)
+2. **Remove Sentry** (guaranteed fix, nuclear option)
+3. **Patch Sentry** (keeps Sentry, modifies source)
+4. **Different Sentry Package** (alternative implementation)
+5. **Custom Transformer** (advanced, high effort)
+6. **Babel Inline** (changes compilation strategy)
+7. **Delay Init** (timing-based workaround)
+8. **Hermes** (requires full rebuild)
+9. **Downgrade** (try older versions)
+10. **RequireJS** (last resort)
+
+## Testing After Each Solution
+
+1. Clear Metro cache: `npx expo start --clear`
+2. Test in Expo Go
+3. Check for __extends error
+4. If fixed, commit and build APK
+5. If not fixed, revert and try next solution
+
+## Files to Track Changes
+
+All attempted solutions logged to `.ignored` file for reference.

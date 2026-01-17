@@ -47,8 +47,7 @@
           "cameraPermission": "Allow Trading Agenda to capture trade screenshots"
         }
       ],
-      "expo-notifications",
-      "sentry-expo"
+      "expo-notifications"
     ]
   }
 }
