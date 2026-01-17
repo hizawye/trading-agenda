@@ -246,3 +246,29 @@
 - Sentry source maps uploaded automatically during build
 - No custom native code, managed workflow sufficient
 
+
+## 2026-01-17: tslib Bundling Fix for __extends Error
+
+### Metro Configuration for tslib Resolution
+**Decision:** Add explicit Metro config to force tslib resolution and import tslib at entry point
+**Rationale:**
+- `__extends is undefined` error still occurred in production build despite tslib 1.14.1 downgrade
+- Metro bundler wasn't properly including tslib helpers in the bundle
+- Added `import 'tslib'` at index.ts entry point to force inclusion
+- Created metro.config.js with explicit tslib resolution path
+- Ensures __extends and other helpers are available at runtime
+- Testing with Expo Go instead of full rebuild for faster iteration
+
+## 2026-01-17: Metro .mjs Resolution Fix for __extends Error
+
+### Add .mjs to Metro Asset Extensions
+**Decision:** Add 'mjs' to Metro's config.resolver.assetExts to fix __extends error
+**Rationale:**
+- Root cause: Metro bundler doesn't resolve tslib's .mjs files (tslib.es6.mjs) by default
+- Research from GitHub issues and Expo SDK 54 docs confirmed this is a known Sentry + Expo issue
+- Previous attempts (tslib downgrade, explicit import, extraNodeModules) didn't fix the problem
+- Solution: `config.resolver.assetExts = [...(config.resolver.assetExts || []), 'mjs']`
+- Allows Metro to properly bundle tslib's ES6 module files
+- Metro server running successfully after change (commit 291a583)
+- Pending: verification in Expo Go that __extends error is resolved
+
