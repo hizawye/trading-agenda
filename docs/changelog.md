@@ -66,4 +66,5 @@
 
 ### Changed
 - Ready for physical device testing phase
+- App display name updated from "trading-agenda" to "Trading agenda"
 
