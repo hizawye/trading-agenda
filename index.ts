@@ -1,6 +1,3 @@
-// CRITICAL: Import polyfills FIRST to inject tslib helpers into global scope
-import './src/polyfills';
-import 'tslib';
 import { registerRootComponent } from 'expo';
 
 import App from './App';
