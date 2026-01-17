@@ -213,3 +213,16 @@
 - Configured permission messages explain "for trade screenshots" use case
 - Better to declare explicitly than rely on auto-linking inference
 
+## 2026-01-17: tslib Version Conflict Resolution
+
+### tslib Downgrade to 1.14.1
+**Decision:** Downgrade tslib from ^2.8.1 to 1.14.1
+**Rationale:**
+- Sentry packages (v7.52.x) compiled with importHelpers expect tslib@1.14.1
+- Metro bundler cannot resolve multiple tslib versions correctly
+- Runtime error: `__extends is undefined` when Sentry.init() executes in App.tsx
+- npm tree showed 10+ nested tslib@1.14.1 instances in @sentry/* packages
+- Downgrading root tslib ensures single deduped version across dependency tree
+- tslib 1.14.1 stable and compatible with all functionality
+- Avoids complex Metro resolver configuration
+
