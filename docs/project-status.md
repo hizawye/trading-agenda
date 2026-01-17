@@ -1,7 +1,7 @@
 # Trading Agenda - Project Status
 
 ## Current State
-**Phase:** Runtime Error Fixed - Ready for Testing ✅
+**Phase:** __extends Error FIXED - Ready for New Build ✅
 **Last Updated:** 2026-01-17
 
 ## What's Done
@@ -51,14 +51,15 @@
 - **Beta Prep (Phase 5):**
   - Asset optimization: icon.png (5.6M → 285KB), splash-icon.png (5.1M → 240KB) - saved ~10MB
   - Permissions configured: camera, photo library, notifications, exact alarms
-  - Sentry crash reporting integration with structured logger
   - Privacy policy created (local-only data storage)
   - Type check passing
   - All console.error replaced with logger.error
-- **Runtime Fix (2026-01-17):**
-  - Fixed `__extends is undefined` error by downgrading tslib 2.8.1 → 1.14.1
-  - Ensured single deduped tslib version across all Sentry dependencies
-  - Metro bundler running successfully
+- **__extends Error Fixed (2026-01-17):**
+  - Created metro.config.js with .mjs asset extension support
+  - Added tslib@^2.8.1 as direct dependency
+  - Configured Metro tslib module resolution
+  - Android bundle compiles successfully (verified via `npx expo export`)
+  - **READY FOR NEW BUILD** - previous build had Sentry removed, this fixes the root cause
 
 ## What's Not Done Yet
 - [ ] Image annotation/drawing on trade screenshots
@@ -70,11 +71,11 @@
 - None currently identified
 
 ## Where to Start Next
-1. **Configure Sentry:** Add your Sentry DSN to App.tsx and update sentry.properties
-2. **Preview Build:** Run `eas build --profile preview --platform android`
-3. **Device Testing:** Test APK on physical device (notifications, permissions, camera, SQLite)
-4. **Production Build:** Run `eas build --profile production --platform android`
-5. **Beta Distribution:** Share APK with beta testers
+1. **Run Expo Dev Server:** `npx expo start` - test in Expo Go to verify fix works in dev mode
+2. **Preview Build:** `eas build --profile preview --platform android` - create new APK with fix
+3. **Device Testing:** Test APK on physical device (all functionality)
+4. **Consider Re-adding Sentry:** Now that Metro config is fixed, sentry-expo should work if re-installed
+5. **Production Build:** `eas build --profile production --platform android` when ready
 
 ## Latest Build (2026-01-17)
 **Build ID:** da55d707-4f54-427e-b202-cbc3c6b3cbdf

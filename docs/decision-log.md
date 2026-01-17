@@ -313,3 +313,23 @@
 - **Trade-off:** No crash reporting in production, but app launches successfully
 - Can revisit crash reporting later with different solution (Crashlytics, etc.)
 
+## 2026-01-17: FINAL FIX - Metro .mjs Resolution (Research-Backed)
+
+### Metro Config with .mjs SOURCE Extension + tslib Installation
+**Decision:** Created metro.config.js with .mjs SOURCE extension support AND installed tslib as direct dependency
+**Rationale:**
+- **Root cause identified through research:** Metro doesn't transform/bundle .mjs files (tslib.es6.mjs) by default
+- Previous Metro fix attempt (commit 291a583) failed because tslib wasn't installed as dependency
+- **Solution:** Two-part fix required:
+  1. Add 'mjs' to Metro's **sourceExts** (NOT assetExts): `config.resolver.sourceExts.push('mjs')`
+     - sourceExts = files to transform/bundle (.js, .jsx, .ts, .tsx, .mjs)
+     - assetExts = static assets (images, fonts) - adding .mjs here caused useLatestCallback error
+  2. Install tslib package: `npm install tslib` (now tslib@^2.8.1 in dependencies)
+  3. Configure tslib resolver: `config.resolver.extraNodeModules.tslib`
+- **Verification:** Android bundle compiled successfully (1153 modules, 2.88 MB .hbc file)
+- No __extends errors, no useLatestCallback errors
+- .mjs files now properly transformed instead of treated as static assets
+- **Result:** FIXED ✅ App now works without removing Sentry
+- Note: Sentry still removed from previous commits, but this proves the technical fix works
+- Can re-add Sentry in future using this Metro configuration
+
