@@ -80,13 +80,19 @@
 5. **Production Build:** `eas build --profile production --platform android` when ready
 
 ## Latest Build (2026-01-17)
-**Build ID:** da55d707-4f54-427e-b202-cbc3c6b3cbdf
+**Build ID:** 56c60335-17c3-45c4-a062-8940467e9514
 **Platform:** Android (preview)
-**Status:** Build completed successfully
-**Download:** https://expo.dev/accounts/hizawye/projects/trading-agenda/builds/da55d707-4f54-427e-b202-cbc3c6b3cbdf
+**Status:** ✅ Build completed successfully
+**Download:** https://expo.dev/accounts/hizawye/projects/trading-agenda/builds/56c60335-17c3-45c4-a062-8940467e9514
+**Includes:** Dual-layer __extends fix (Metro config + global polyfill)
 
 ### Device Testing Checklist
-- [ ] App launches without crashes
+**Priority 1: Verify __extends fix**
+- [ ] App launches without "__extends is undefined" error
+- [ ] App launches without "useLatestCallback" error
+- [ ] No red error screen on startup
+
+**Priority 2: Core functionality**
 - [ ] SQLite operations (add/edit/delete trades)
 - [ ] Notifications (alert scheduling, trigger test)
 - [ ] Camera permission (add screenshot to trade)
