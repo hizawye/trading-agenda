@@ -62,21 +62,36 @@ export function CalendarGrid({ currentDate, trades, onMonthChange }: CalendarGri
             const isNegative = data && data.pnl < 0;
             const isNeutral = !data;
 
-            let bg: string = colors.bg.tertiary;
-            if (isPositive) bg = 'rgba(34, 197, 94, 0.25)';
-            if (isNegative) bg = 'rgba(239, 68, 68, 0.25)';
+            // Premium colors
+            let bg = 'transparent';
+            let borderColor = 'transparent';
 
-            let textColor: string = colors.text.primary;
-            if (isPositive) textColor = colors.semantic.success;
-            if (isNegative) textColor = colors.semantic.error;
-            if (isNeutral) textColor = colors.text.tertiary;
+            if (isPositive) {
+                bg = 'rgba(16, 185, 129, 0.2)'; // Emerald 500 with opacity
+                borderColor = 'rgba(16, 185, 129, 0.5)';
+            }
+            if (isNegative) {
+                bg = 'rgba(239, 68, 68, 0.2)'; // Red 500 with opacity
+                borderColor = 'rgba(239, 68, 68, 0.5)';
+            }
+
+            // Text colors
+            let dateColor = colors.text.tertiary;
+            let pnlColor = colors.text.primary;
+
+            if (isPositive) pnlColor = '#34D399'; // Emerald 400
+            if (isNegative) pnlColor = '#F87171'; // Red 400
+            if (!isNeutral) dateColor = 'rgba(255,255,255,0.5)';
 
             days.push(
-                <View key={d} style={[styles.dayCell, { backgroundColor: bg, borderColor: isNeutral ? colors.bg.primary : bg }]}>
-                    <Text style={[styles.dayNumber, { color: isNeutral ? colors.text.tertiary : colors.text.secondary }]}>{d}</Text>
+                <View key={d} style={[
+                    styles.dayCell,
+                    { backgroundColor: bg, borderColor: borderColor, borderWidth: isNeutral ? 0 : 1 }
+                ]}>
+                    <Text style={[styles.dayNumber, { color: dateColor }]}>{d}</Text>
                     {data && (
                         <View style={styles.pnlContainer}>
-                            <Text style={[styles.pnlText, { color: textColor }]}>
+                            <Text style={[styles.pnlText, { color: pnlColor }]}>
                                 {data.pnl >= 0 ? '+' : ''}{Math.round(data.pnl)}
                             </Text>
                         </View>
@@ -115,11 +130,11 @@ export function CalendarGrid({ currentDate, trades, onMonthChange }: CalendarGri
 
             <View style={styles.legend}>
                 <View style={styles.legendItem}>
-                    <View style={[styles.dot, { backgroundColor: colors.semantic.success }]} />
+                    <View style={[styles.dot, { backgroundColor: '#34D399' }]} />
                     <Text style={styles.legendText}>Profit</Text>
                 </View>
                 <View style={styles.legendItem}>
-                    <View style={[styles.dot, { backgroundColor: colors.semantic.error }]} />
+                    <View style={[styles.dot, { backgroundColor: '#F87171' }]} />
                     <Text style={styles.legendText}>Loss</Text>
                 </View>
             </View>
@@ -129,27 +144,35 @@ export function CalendarGrid({ currentDate, trades, onMonthChange }: CalendarGri
 
 const styles = StyleSheet.create({
     container: {
-        backgroundColor: colors.bg.secondary,
         borderRadius: radii.lg,
-        padding: spacing.md,
-        marginBottom: spacing.md,
+        paddingHorizontal: spacing.sm,
+        paddingBottom: spacing.md,
+        // Removed background color to blend better, or keep it subtle
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         marginBottom: spacing.md,
+        paddingHorizontal: spacing.sm,
     },
     navBtn: {
         padding: spacing.xs,
+        backgroundColor: colors.bg.tertiary,
+        borderRadius: radii.full,
+        width: 32,
+        height: 32,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     navText: {
-        fontSize: 24,
+        fontSize: 18,
         color: colors.text.primary,
-        lineHeight: 24,
+        marginTop: -2,
     },
     monthTitle: {
-        ...typography.heading,
+        ...typography.body, // Smaller title
+        fontWeight: '600',
         color: colors.text.primary,
     },
     grid: {
@@ -157,27 +180,29 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap',
     },
     dayHeader: {
-        width: '14.28%', // 100% / 7
+        width: '14.28%',
         alignItems: 'center',
-        marginBottom: spacing.xs,
+        marginBottom: spacing.sm,
     },
     dayHeaderText: {
-        ...typography.caption,
-        color: colors.text.tertiary,
+        fontSize: 10,
         fontWeight: 'bold',
+        color: colors.text.tertiary,
+        opacity: 0.7,
     },
     dayCell: {
         width: '14.28%',
         aspectRatio: 1,
-        borderRadius: radii.sm,
-        borderWidth: 1,
-        padding: 4,
+        borderRadius: radii.md, // More rounded
+        padding: 2,
         justifyContent: 'space-between',
+        marginBottom: 2, // Slight gap
     },
     dayNumber: {
         fontSize: 10,
-        fontWeight: '400',
-        alignSelf: 'flex-start',
+        fontWeight: '500',
+        marginLeft: 2,
+        marginTop: 2,
     },
     pnlContainer: {
         flex: 1,
@@ -185,8 +210,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     pnlText: {
-        fontSize: 11,
-        fontWeight: '900', // Extra bold for visibility
+        fontSize: 10,
+        fontWeight: 'bold',
     },
     legend: {
         flexDirection: 'row',
@@ -200,12 +225,12 @@ const styles = StyleSheet.create({
         gap: spacing.xs,
     },
     dot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
+        width: 6,
+        height: 6,
+        borderRadius: 3,
     },
     legendText: {
-        ...typography.caption,
+        fontSize: 12,
         color: colors.text.secondary,
     }
 });

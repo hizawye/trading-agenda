@@ -2,6 +2,7 @@ import React from 'react';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
+import { Ionicons } from '@expo/vector-icons';
 import { Text } from 'react-native';
 
 import JournalScreen from '../screens/JournalScreen';
@@ -28,8 +29,8 @@ const DarkTheme = {
   },
 };
 
-const TabIcon = ({ name, focused }: { name: string; focused: boolean }) => (
-  <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.5 }}>{name}</Text>
+const TabIcon = ({ name, focused }: { name: keyof typeof Ionicons.glyphMap; focused: boolean }) => (
+  <Ionicons name={name} size={24} color={focused ? '#10B981' : '#94A3B8'} />
 );
 
 // Stack navigator for More tab
@@ -76,13 +77,14 @@ export default function Navigation() {
           tabBarStyle: { backgroundColor: '#1E293B', borderTopColor: '#334155' },
           tabBarActiveTintColor: '#10B981',
           tabBarInactiveTintColor: '#94A3B8',
+          tabBarShowLabel: true,
         }}
       >
         <Tab.Screen
           name="Journal"
           component={JournalScreen}
           options={{
-            tabBarIcon: ({ focused }) => <TabIcon name="📓" focused={focused} />,
+            tabBarIcon: ({ focused }) => <TabIcon name={focused ? 'book' : 'book-outline'} focused={focused} />,
           }}
         />
         <Tab.Screen
@@ -90,7 +92,7 @@ export default function Navigation() {
           component={MoreStack}
           options={{
             headerShown: false,
-            tabBarIcon: ({ focused }) => <TabIcon name="⋮" focused={focused} />,
+            tabBarIcon: ({ focused }) => <TabIcon name={focused ? 'grid' : 'grid-outline'} focused={focused} />,
           }}
         />
       </Tab.Navigator>
