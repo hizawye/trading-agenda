@@ -228,30 +228,38 @@ const parseTrade = (row: any): Trade => ({
 });
 
 // Alert CRUD operations
+// Alert CRUD operations
 export const insertAlert = async (alert: Alert): Promise<void> => {
   const database = await getDatabase();
-  await database.runAsync(
-    'INSERT INTO alerts (id, time, label, description, enabled, days) VALUES (?, ?, ?, ?, ?, ?)',
-    alert.id,
-    alert.time,
-    alert.label,
-    alert.description ?? null,
-    alert.enabled ? 1 : 0,
-    JSON.stringify(alert.days)
-  );
+  const daysJSON = JSON.stringify(alert.days || []);
+  const safeDesc = (alert.description || '').replace(/'/g, "''");
+  const safeLabel = alert.label.replace(/'/g, "''");
+
+  logger.info('Inserting alert (via execAsync)', { ...alert, days: daysJSON });
+
+  await database.execAsync(`
+    INSERT INTO alerts (id, time, label, description, enabled, days) 
+    VALUES ('${alert.id}', '${alert.time}', '${safeLabel}', '${safeDesc}', ${alert.enabled ? 1 : 0}, '${daysJSON}');
+  `);
 };
 
 export const updateAlert = async (alert: Alert): Promise<void> => {
   const database = await getDatabase();
-  await database.runAsync(
-    'UPDATE alerts SET time=?, label=?, description=?, enabled=?, days=? WHERE id=?',
-    alert.time,
-    alert.label,
-    alert.description ?? null,
-    alert.enabled ? 1 : 0,
-    JSON.stringify(alert.days),
-    alert.id
-  );
+  const daysJSON = JSON.stringify(alert.days || []);
+  const safeDesc = (alert.description || '').replace(/'/g, "''");
+  const safeLabel = alert.label.replace(/'/g, "''");
+
+  logger.info('Updating alert (via execAsync)', { ...alert, days: daysJSON });
+
+  await database.execAsync(`
+    UPDATE alerts SET 
+      time='${alert.time}', 
+      label='${safeLabel}', 
+      description='${safeDesc}', 
+      enabled=${alert.enabled ? 1 : 0}, 
+      days='${daysJSON}' 
+    WHERE id='${alert.id}';
+  `);
 };
 
 export const deleteAlert = async (id: string): Promise<void> => {
