@@ -4,12 +4,13 @@ import * as ImagePicker from 'expo-image-picker';
 import { Paths, File as ExpoFile } from 'expo-file-system';
 import { useTradeStore } from '../stores/tradeStore';
 import { useRuleStore } from '../stores/ruleStore';
+import { useAlertStore } from '../stores/alertStore';
 import { Trade, Session, SetupType, TradeDirection, TradeOutcome, Confirmation, Killzone } from '../types';
-import { getSessionById, getCurrentSession } from '../constants/sessions';
+import { getSessionById, getCurrentSession, SESSIONS } from '../constants/sessions';
 import { DEFAULT_KILLZONES, getCurrentKillzone } from '../constants/killzones';
-import { calculateRiskReward } from '../lib/utils';
+import { calculateRiskReward, getNYTime, formatTimeRange, formatTime, getTimeUntil } from '../lib/utils';
 import { colors, typography, spacing, radii } from '../design/tokens';
-import { outcomeColor } from '../design/utils';
+import { outcomeColor, pnlColor } from '../design/utils';
 import { FormModal } from '../components/FormModal';
 import { FormField, FormLabel } from '../components/FormField';
 import { OptionPicker } from '../components/OptionPicker';
@@ -17,18 +18,36 @@ import { TradeCard } from '../components/TradeCard';
 import { FAB } from '../components/FAB';
 import { Card } from '../components/Card';
 import { Stat } from '../components/Stat';
-import { SESSIONS } from '../constants/sessions';
+import { SessionBadge } from '../components/SessionBadge';
 
 const SETUP_TYPES: SetupType[] = ['continuation', 'reversal', 'liquidity_sweep', 'fvg_fill', 'breakout', 'other'];
 const CONFIRMATIONS: Confirmation[] = ['smt', 'mss', 'bos', 'fvg', 'swing_sweep', 'pd_array', 'time_window'];
 const OUTCOMES: TradeOutcome[] = ['win', 'loss', 'breakeven', 'pending'];
 
 export default function JournalScreen() {
-  const { trades, loadTrades, addTrade, updateTrade, deleteTrade } = useTradeStore();
+  const { trades, loadTrades, addTrade, updateTrade, deleteTrade, getTodayTrades, getTodayPnL, getWinRate } = useTradeStore();
   const { rules, loadRules } = useRuleStore();
+  const { loadAlerts, getNextAlert, initializeNotifications } = useAlertStore();
+
   const [modalVisible, setModalVisible] = useState(false);
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
   const [showRules, setShowRules] = useState(true);
+  const [currentTime, setCurrentTime] = useState(getNYTime());
+
+  // Dashboard state
+  const currentSession = getCurrentSession();
+  const currentKillzone = getCurrentKillzone();
+  const nextAlert = getNextAlert();
+  const todayTrades = getTodayTrades();
+  const todayPnL = getTodayPnL();
+  const todayWinRate = getWinRate(); // Note: this is actually overall winrate in store, check if we need today's
+  // The store's getWinRate() calculates for ALL trades unless filtered. 
+  // Let's calculate today's win rate locally for the dashboard
+  const todayCompleted = todayTrades.filter(t => t.outcome !== 'pending');
+  const todayWins = todayCompleted.filter(t => t.outcome === 'win').length;
+  const todayWinRateCalc = todayCompleted.length > 0 ? (todayWins / todayCompleted.length) * 100 : 0;
+
+  const timeUntilNext = nextAlert ? getTimeUntil(nextAlert.time) : null;
 
   // Form state
   const [session, setSession] = useState<Session>('ny_am');
@@ -45,7 +64,7 @@ export default function JournalScreen() {
   const [notes, setNotes] = useState('');
   const [confirmations, setConfirmations] = useState<Confirmation[]>([]);
   const [images, setImages] = useState<string[]>([]);
-  const [quickMode, setQuickMode] = useState(true); // Quick vs full form mode
+  const [quickMode, setQuickMode] = useState(true);
 
   // Filter state
   const [filterSession, setFilterSession] = useState<Session | 'all'>('all');
@@ -55,6 +74,11 @@ export default function JournalScreen() {
   useEffect(() => {
     loadTrades();
     loadRules();
+    loadAlerts();
+    initializeNotifications();
+
+    const timer = setInterval(() => setCurrentTime(getNYTime()), 1000);
+    return () => clearInterval(timer);
   }, []);
 
   const resetForm = () => {
@@ -80,8 +104,8 @@ export default function JournalScreen() {
 
   const openAddModal = () => {
     resetForm();
-    setQuickMode(true); // New trades default to quick mode
-    setShowRules(true); // Show rules reminder
+    setQuickMode(true);
+    setShowRules(true);
     setModalVisible(true);
   };
 
@@ -101,7 +125,7 @@ export default function JournalScreen() {
     setNotes(trade.notes);
     setConfirmations(trade.confirmations);
     setImages(trade.images || []);
-    setQuickMode(false); // Editing shows full form
+    setQuickMode(false);
     setModalVisible(true);
   };
 
@@ -112,16 +136,15 @@ export default function JournalScreen() {
       const tpNum = parseFloat(takeProfit) || 0;
       const rr = calculateRiskReward(entryNum, slNum, tpNum);
 
-      // Handle P&L sign based on outcome
       let pnlValue: number | undefined = undefined;
       if (pnl) {
         const pnlNum = parseFloat(pnl);
         if (outcome === 'loss') {
-          pnlValue = -Math.abs(pnlNum); // Always negative for losses
+          pnlValue = -Math.abs(pnlNum);
         } else if (outcome === 'win') {
-          pnlValue = Math.abs(pnlNum); // Always positive for wins
+          pnlValue = Math.abs(pnlNum);
         } else {
-          pnlValue = pnlNum; // Keep as-is for breakeven/pending
+          pnlValue = pnlNum;
         }
       }
 
@@ -238,6 +261,46 @@ export default function JournalScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Dashboard Section */}
+      <View style={styles.dashboard}>
+        {/* Session & Time */}
+        <View style={styles.headerRow}>
+          <View>
+            {currentSession ? (
+              <SessionBadge name={currentSession.name} color={currentSession.color} size="md" />
+            ) : (
+              <Text style={styles.offHours}>OFF</Text>
+            )}
+            <Text style={styles.currentTime}>
+              {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })} EST
+            </Text>
+          </View>
+
+          {/* Next Alert */}
+          {nextAlert ? (
+            <View style={styles.nextAlert}>
+              <Text style={styles.nextAlertLabel}>Next: {nextAlert.label}</Text>
+              <Text style={styles.nextAlertTime}>
+                {formatTime(nextAlert.time)}
+                {timeUntilNext && <Text style={{ fontWeight: '400' }}> ({timeUntilNext.hours}h {timeUntilNext.minutes}m)</Text>}
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.nextAlert}><Text style={styles.nextAlertLabel}>No upcoming alerts</Text></View>
+          )}
+        </View>
+
+        {/* Today's Quick Stats */}
+        <View style={styles.todayStats}>
+          <Stat value={todayTrades.length} label="Today" />
+          <Stat
+            value={`${todayPnL >= 0 ? '+' : ''}${todayPnL.toFixed(2)}`}
+            label="P&L"
+            color={pnlColor(todayPnL)}
+          />
+          <Stat value={`${todayWinRateCalc.toFixed(0)}%`} label="Win %" />
+        </View>
+      </View>
       {/* Filter Bar */}
       <View style={styles.filterBar}>
         <TouchableOpacity
@@ -572,5 +635,46 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.text.tertiary,
     fontStyle: 'italic',
+  },
+  dashboard: {
+    padding: spacing.md,
+    backgroundColor: colors.bg.secondary,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.bg.tertiary,
+    gap: spacing.md,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  offHours: {
+    ...typography.title,
+    color: colors.text.tertiary,
+    fontWeight: 'bold',
+  },
+  currentTime: {
+    ...typography.heading,
+    color: colors.text.primary,
+    marginTop: 2,
+  },
+  nextAlert: {
+    alignItems: 'flex-end',
+  },
+  nextAlertLabel: {
+    ...typography.caption,
+    color: colors.text.secondary,
+  },
+  nextAlertTime: {
+    ...typography.body,
+    fontWeight: 'bold',
+    color: colors.semantic.success,
+  },
+  todayStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: colors.bg.tertiary,
+    padding: spacing.sm,
+    borderRadius: radii.md,
   },
 });

@@ -230,32 +230,26 @@ const parseTrade = (row: any): Trade => ({
 // Alert CRUD operations
 export const insertAlert = async (alert: Alert): Promise<void> => {
   const database = await getDatabase();
-  const daysJSON = JSON.stringify(alert.days || []);
-  logger.info('Inserting alert', { ...alert, days: daysJSON });
-
   await database.runAsync(
     'INSERT INTO alerts (id, time, label, description, enabled, days) VALUES (?, ?, ?, ?, ?, ?)',
     alert.id,
     alert.time,
     alert.label,
-    alert.description || null,
+    alert.description ?? null,
     alert.enabled ? 1 : 0,
-    daysJSON
+    JSON.stringify(alert.days)
   );
 };
 
 export const updateAlert = async (alert: Alert): Promise<void> => {
   const database = await getDatabase();
-  const daysJSON = JSON.stringify(alert.days || []);
-  logger.info('Updating alert', { ...alert, days: daysJSON });
-
   await database.runAsync(
     'UPDATE alerts SET time=?, label=?, description=?, enabled=?, days=? WHERE id=?',
     alert.time,
     alert.label,
-    alert.description || null,
+    alert.description ?? null,
     alert.enabled ? 1 : 0,
-    daysJSON,
+    JSON.stringify(alert.days),
     alert.id
   );
 };

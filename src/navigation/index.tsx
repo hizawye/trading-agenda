@@ -4,7 +4,6 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Text } from 'react-native';
 
-import TodayScreen from '../screens/TodayScreen';
 import JournalScreen from '../screens/JournalScreen';
 import MoreScreen from '../screens/MoreScreen';
 import AnalyticsScreen from '../screens/AnalyticsScreen';
@@ -79,13 +78,6 @@ export default function Navigation() {
           tabBarInactiveTintColor: '#94A3B8',
         }}
       >
-        <Tab.Screen
-          name="Today"
-          component={TodayScreen}
-          options={{
-            tabBarIcon: ({ focused }) => <TabIcon name="📍" focused={focused} />,
-          }}
-        />
         <Tab.Screen
           name="Journal"
           component={JournalScreen}

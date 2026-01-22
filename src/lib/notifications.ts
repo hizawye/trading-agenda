@@ -1,6 +1,5 @@
 import * as Notifications from 'expo-notifications';
 import { Alert } from '../types';
-import { calculateLocalNotificationSchedule } from './utils';
 
 // Configure notification behavior
 Notifications.setNotificationHandler({
@@ -41,8 +40,6 @@ export const scheduleAlertNotification = async (alert: Alert): Promise<string | 
   const identifiers: string[] = [];
 
   for (const day of alert.days) {
-    const localSchedule = calculateLocalNotificationSchedule(day, alert.time);
-
     const identifier = await Notifications.scheduleNotificationAsync({
       content: {
         title: alert.label,
@@ -51,9 +48,9 @@ export const scheduleAlertNotification = async (alert: Alert): Promise<string | 
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
-        weekday: localSchedule.weekday + 1, // Convert 0-6 (Sun-Sat) to Expo's 1-7 (Sun-Sat)
-        hour: localSchedule.hour,
-        minute: localSchedule.minute,
+        weekday: day + 1, // Expo uses 1-7 (Sun-Sat), we use 0-6
+        hour: hours,
+        minute: minutes,
       },
     });
     identifiers.push(identifier);
