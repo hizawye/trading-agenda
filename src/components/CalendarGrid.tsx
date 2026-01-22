@@ -63,8 +63,8 @@ export function CalendarGrid({ currentDate, trades, onMonthChange }: CalendarGri
             const isNeutral = !data;
 
             let bg: string = colors.bg.tertiary;
-            if (isPositive) bg = 'rgba(34, 197, 94, 0.2)'; // success with opacity
-            if (isNegative) bg = 'rgba(239, 68, 68, 0.2)'; // error with opacity
+            if (isPositive) bg = 'rgba(34, 197, 94, 0.25)';
+            if (isNegative) bg = 'rgba(239, 68, 68, 0.25)';
 
             let textColor: string = colors.text.primary;
             if (isPositive) textColor = colors.semantic.success;
@@ -72,12 +72,14 @@ export function CalendarGrid({ currentDate, trades, onMonthChange }: CalendarGri
             if (isNeutral) textColor = colors.text.tertiary;
 
             days.push(
-                <View key={d} style={[styles.dayCell, { backgroundColor: bg }]}>
-                    <Text style={[styles.dayText, { color: textColor }]}>{d}</Text>
+                <View key={d} style={[styles.dayCell, { backgroundColor: bg, borderColor: isNeutral ? colors.bg.primary : bg }]}>
+                    <Text style={[styles.dayNumber, { color: isNeutral ? colors.text.tertiary : colors.text.secondary }]}>{d}</Text>
                     {data && (
-                        <Text style={[styles.pnlText, { color: textColor }]}>
-                            {data.pnl >= 0 ? '+' : ''}{Math.round(data.pnl)}
-                        </Text>
+                        <View style={styles.pnlContainer}>
+                            <Text style={[styles.pnlText, { color: textColor }]}>
+                                {data.pnl >= 0 ? '+' : ''}{Math.round(data.pnl)}
+                            </Text>
+                        </View>
                     )}
                 </View>
             );
@@ -167,22 +169,24 @@ const styles = StyleSheet.create({
     dayCell: {
         width: '14.28%',
         aspectRatio: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
         borderRadius: radii.sm,
         borderWidth: 1,
-        borderColor: colors.bg.primary,
-        padding: 2,
+        padding: 4,
+        justifyContent: 'space-between',
     },
-    dayText: {
-        ...typography.caption,
-        fontWeight: '600',
+    dayNumber: {
         fontSize: 10,
+        fontWeight: '400',
+        alignSelf: 'flex-start',
+    },
+    pnlContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     pnlText: {
-        fontSize: 8,
-        fontWeight: 'bold',
-        marginTop: 2,
+        fontSize: 11,
+        fontWeight: '900', // Extra bold for visibility
     },
     legend: {
         flexDirection: 'row',
