@@ -137,55 +137,77 @@ const migrateTimeWindowToKillzone = async () => {
 // Trade CRUD operations
 export const insertTrade = async (trade: Trade): Promise<void> => {
   const database = await getDatabase();
-  await database.runAsync(
-    `INSERT INTO trades (id, timestamp, session, timeWindow, killzone, setupType, direction, symbol, entry, stopLoss, takeProfit, outcome, pnl, riskReward, images, notes, confirmations, createdAt, updatedAt)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    trade.id,
-    trade.timestamp,
-    trade.session,
-    trade.timeWindow,
-    trade.killzone ?? null,
-    trade.setupType,
-    trade.direction,
-    trade.symbol,
-    trade.entry,
-    trade.stopLoss,
-    trade.takeProfit,
-    trade.outcome,
-    trade.pnl ?? null,
-    trade.riskReward ?? null,
-    JSON.stringify(trade.images),
-    trade.notes,
-    JSON.stringify(trade.confirmations),
-    trade.createdAt,
-    trade.updatedAt
-  );
+
+  // Safe stringifiers
+  const safeStr = (s: string) => (s || '').replace(/'/g, "''");
+  const safeJson = (obj: any) => JSON.stringify(obj || []).replace(/'/g, "''");
+  const nullOrNum = (n: number | undefined | null) => (n === undefined || n === null ? 'NULL' : n);
+  const nullOrStr = (s: string | undefined | null) => (s ? `'${safeStr(s)}'` : 'NULL');
+
+  const sql = `
+    INSERT INTO trades (
+      id, timestamp, session, timeWindow, killzone, setupType, direction, 
+      symbol, entry, stopLoss, takeProfit, outcome, pnl, riskReward, 
+      images, notes, confirmations, createdAt, updatedAt
+    ) VALUES (
+      '${trade.id}',
+      ${trade.timestamp},
+      '${safeStr(trade.session)}',
+      '${safeStr(trade.timeWindow)}',
+      ${nullOrStr(trade.killzone)},
+      '${safeStr(trade.setupType)}',
+      '${safeStr(trade.direction)}',
+      '${safeStr(trade.symbol)}',
+      ${trade.entry},
+      ${trade.stopLoss},
+      ${trade.takeProfit},
+      '${safeStr(trade.outcome)}',
+      ${nullOrNum(trade.pnl)},
+      ${nullOrNum(trade.riskReward)},
+      '${safeJson(trade.images)}',
+      '${safeStr(trade.notes)}',
+      '${safeJson(trade.confirmations)}',
+      ${trade.createdAt},
+      ${trade.updatedAt}
+    );
+  `;
+
+  await database.execAsync(sql);
 };
 
 export const updateTrade = async (trade: Trade): Promise<void> => {
   const database = await getDatabase();
-  await database.runAsync(
-    `UPDATE trades SET timestamp=?, session=?, timeWindow=?, killzone=?, setupType=?, direction=?, symbol=?, entry=?, stopLoss=?, takeProfit=?, outcome=?, pnl=?, riskReward=?, images=?, notes=?, confirmations=?, updatedAt=?
-     WHERE id=?`,
-    trade.timestamp,
-    trade.session,
-    trade.timeWindow,
-    trade.killzone ?? null,
-    trade.setupType,
-    trade.direction,
-    trade.symbol,
-    trade.entry,
-    trade.stopLoss,
-    trade.takeProfit,
-    trade.outcome,
-    trade.pnl ?? null,
-    trade.riskReward ?? null,
-    JSON.stringify(trade.images),
-    trade.notes,
-    JSON.stringify(trade.confirmations),
-    Date.now(),
-    trade.id
-  );
+
+  // Safe stringifiers (re-defined here for clarity, or could move to module scope)
+  const safeStr = (s: string) => (s || '').replace(/'/g, "''");
+  const safeJson = (obj: any) => JSON.stringify(obj || []).replace(/'/g, "''");
+  const nullOrNum = (n: number | undefined | null) => (n === undefined || n === null || isNaN(n) ? 'NULL' : n);
+  const nullOrStr = (s: string | undefined | null) => (s ? `'${safeStr(s)}'` : 'NULL');
+
+  const sql = `
+    UPDATE trades SET 
+      timestamp=${trade.timestamp},
+      session='${safeStr(trade.session)}',
+      timeWindow='${safeStr(trade.timeWindow)}',
+      killzone=${nullOrStr(trade.killzone)},
+      setupType='${safeStr(trade.setupType)}',
+      direction='${safeStr(trade.direction)}',
+      symbol='${safeStr(trade.symbol)}',
+      entry=${nullOrNum(trade.entry)},
+      stopLoss=${nullOrNum(trade.stopLoss)},
+      takeProfit=${nullOrNum(trade.takeProfit)},
+      outcome='${safeStr(trade.outcome)}',
+      pnl=${nullOrNum(trade.pnl)},
+      riskReward=${nullOrNum(trade.riskReward)},
+      images='${safeJson(trade.images)}',
+      notes='${safeStr(trade.notes)}',
+      confirmations='${safeJson(trade.confirmations)}',
+      updatedAt=${Date.now()}
+    WHERE id='${trade.id}';
+  `;
+
+  logger.info(`Executing update SQL (len: ${sql.length})`, { sql: sql.substring(0, 100) + '...' });
+  await database.execAsync(sql);
 };
 
 export const deleteTrade = async (id: string): Promise<void> => {

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTradeStore } from '../stores/tradeStore';
 import { SESSIONS } from '../constants/sessions';
@@ -10,21 +10,33 @@ import { ScreenLayout } from '../components/ScreenLayout';
 import { Card } from '../components/Card';
 import { Stat } from '../components/Stat';
 import { StatRow } from '../components/StatRow';
+import { CalendarGrid } from '../components/CalendarGrid';
 
 const SETUP_TYPES: SetupType[] = ['continuation', 'reversal', 'liquidity_sweep', 'fvg_fill', 'breakout', 'other'];
 
 export default function AnalyticsScreen() {
   const { trades, loadTrades, getWinRate } = useTradeStore();
+  const [calendarDate, setCalendarDate] = useState(new Date());
 
   useEffect(() => {
     loadTrades();
   }, []);
+
+  const handleMonthChange = (offset: number) => {
+    setCalendarDate((prev) => {
+      const newDate = new Date(prev);
+      newDate.setMonth(prev.getMonth() + offset);
+      return newDate;
+    });
+  };
 
   const completedTrades = trades.filter((t) => t.outcome !== 'pending');
   const wins = completedTrades.filter((t) => t.outcome === 'win').length;
   const losses = completedTrades.filter((t) => t.outcome === 'loss').length;
   const totalPnL = trades.reduce((sum, t) => sum + (t.pnl || 0), 0);
   const avgRR = completedTrades.reduce((sum, t) => sum + (t.riskReward || 0), 0) / (completedTrades.length || 1);
+
+  // ... stats logic ...
 
   const getSessionStats = (sessionId: Session) => {
     const sessionTrades = completedTrades.filter((t) => t.session === sessionId);
@@ -77,6 +89,13 @@ export default function AnalyticsScreen() {
 
   return (
     <ScreenLayout>
+      {/* Calendar */}
+      <CalendarGrid
+        currentDate={calendarDate}
+        trades={trades}
+        onMonthChange={handleMonthChange}
+      />
+
       {/* Overview */}
       <Card title="Overview">
         <View style={styles.statsGrid}>
