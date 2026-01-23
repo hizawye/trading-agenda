@@ -4,11 +4,71 @@ import logger from './logger';
 
 let db: SQLite.SQLiteDatabase | null = null;
 
+type Migration = {
+  version: number;
+  name: string;
+  up: (db: SQLite.SQLiteDatabase) => Promise<void>;
+};
+
+const MIGRATIONS: Migration[] = [
+  {
+    version: 1,
+    name: 'add_killzone_column',
+    up: async (db) => {
+      // Check if killzone column exists (idempotent for existing DBs)
+      const tableInfo = await db.getAllAsync<any>('PRAGMA table_info(trades)');
+      const hasKillzone = tableInfo.some((col: any) => col.name === 'killzone');
+
+      if (!hasKillzone) {
+        await db.execAsync(`
+          ALTER TABLE trades ADD COLUMN killzone TEXT;
+          CREATE INDEX IF NOT EXISTS idx_trades_killzone ON trades(killzone);
+        `);
+      }
+
+      // Migrate existing timeWindow data to killzone enum
+      await migrateTimeWindowToKillzone(db);
+    }
+  },
+  // Future migrations added here
+];
+
+const runMigrations = async () => {
+  if (!db) return;
+
+  const result = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
+  const currentVersion = result?.user_version ?? 0;
+
+  // Bootstrap new installs
+  if (currentVersion === 0) {
+    await initializeTables();
+  }
+
+  // Run pending migrations
+  const pendingMigrations = MIGRATIONS.filter(m => m.version > currentVersion);
+
+  for (const migration of pendingMigrations) {
+    try {
+      logger.info(`Running migration ${migration.version}: ${migration.name}`);
+
+      await db.execAsync('BEGIN TRANSACTION');
+      await migration.up(db);
+      await db.execAsync(`PRAGMA user_version = ${migration.version}`);
+      await db.execAsync('COMMIT');
+
+      logger.info(`Migration ${migration.version} completed`);
+    } catch (error) {
+      await db.execAsync('ROLLBACK');
+      logger.error(`Migration ${migration.version} failed:`, error as Error);
+      throw new Error(`Migration ${migration.version} (${migration.name}) failed: ${error}`);
+    }
+  }
+};
+
 export const getDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
   if (db) return db;
   db = await SQLite.openDatabaseAsync('trading-agenda.db', { useNewConnection: true });
-  await initializeTables();
-  await migrateToKillzones();
+  await runMigrations();
   return db;
 };
 
@@ -60,34 +120,6 @@ const initializeTables = async () => {
   `);
 };
 
-// Migration: Add killzone column if it doesn't exist
-const migrateToKillzones = async () => {
-  if (!db) return;
-
-  try {
-    // Check if killzone column exists
-    const tableInfo = await db.getAllAsync<any>('PRAGMA table_info(trades)');
-    const hasKillzone = tableInfo.some((col: any) => col.name === 'killzone');
-
-    if (!hasKillzone) {
-      console.log('Migrating trades table to add killzone column...');
-
-      // Add killzone column
-      await db.execAsync(`
-        ALTER TABLE trades ADD COLUMN killzone TEXT;
-        CREATE INDEX IF NOT EXISTS idx_trades_killzone ON trades(killzone);
-      `);
-
-      // Migrate existing timeWindow data to killzone enum
-      await migrateTimeWindowToKillzone();
-
-      console.log('Migration complete!');
-    }
-  } catch (error) {
-    logger.error('Migration error:', error as Error);
-  }
-};
-
 // Infer killzone from freeform timeWindow text
 const inferKillzoneFromText = (text: string): Killzone | null => {
   if (!text) return null;
@@ -117,9 +149,7 @@ const inferKillzoneFromText = (text: string): Killzone | null => {
   return null;
 };
 
-const migrateTimeWindowToKillzone = async () => {
-  if (!db) return;
-
+const migrateTimeWindowToKillzone = async (db: SQLite.SQLiteDatabase) => {
   const trades = await db.getAllAsync<any>(
     'SELECT id, timeWindow FROM trades WHERE killzone IS NULL'
   );
@@ -132,6 +162,13 @@ const migrateTimeWindowToKillzone = async () => {
   }
 
   console.log(`Migrated ${trades.length} trades to killzone format`);
+};
+
+// Debug utility
+export const getSchemaVersion = async (): Promise<number> => {
+  const database = await getDatabase();
+  const result = await database.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
+  return result?.user_version ?? 0;
 };
 
 // Trade CRUD operations
