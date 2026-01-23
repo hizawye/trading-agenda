@@ -1,5 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import { Alert } from '../types';
+import { convertNYTimeToLocal } from './utils';
 
 // Configure notification behavior
 Notifications.setNotificationHandler({
@@ -39,7 +40,15 @@ export const scheduleAlertNotification = async (alert: Alert): Promise<string | 
   // Schedule for each enabled day
   const identifiers: string[] = [];
 
+  // Convert NY time to device local time for correct notification firing
+  const { hour: localHour, minute: localMinute, dayOffset } = convertNYTimeToLocal(hours, minutes);
+
   for (const day of alert.days) {
+    // Adjust weekday if timezone conversion crosses midnight
+    let adjustedWeekday = day + 1 + dayOffset; // Expo uses 1-7 (Sun-Sat), we use 0-6
+    if (adjustedWeekday < 1) adjustedWeekday += 7;
+    if (adjustedWeekday > 7) adjustedWeekday -= 7;
+
     const identifier = await Notifications.scheduleNotificationAsync({
       content: {
         title: alert.label,
@@ -48,9 +57,9 @@ export const scheduleAlertNotification = async (alert: Alert): Promise<string | 
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
-        weekday: day + 1, // Expo uses 1-7 (Sun-Sat), we use 0-6
-        hour: hours,
-        minute: minutes,
+        weekday: adjustedWeekday,
+        hour: localHour,
+        minute: localMinute,
       },
     });
     identifiers.push(identifier);

@@ -1,5 +1,19 @@
 # Trading Agenda - Changelog
 
+## [0.3.2] - 2026-01-23
+
+### Fixed
+- Database connection bug: added `useNewConnection: true` to prevent NullPointerException on repeated SQLite operations
+- Notification timezone: alerts now convert NY time to device local time for correct firing
+- Alert store error handling: add/update operations now properly catch and propagate errors
+
+### Changed
+- CalendarGrid: fixed variable shadowing for pnlColor
+- Notifications: weekday calculation now accounts for timezone day boundary crossings
+
+### Added
+- `convertNYTimeToLocal()` utility for timezone-aware notification scheduling
+
 ## [0.3.0] - 2026-01-16 (Beta Prep)
 
 ### Added

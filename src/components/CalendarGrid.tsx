@@ -2,7 +2,6 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Trade } from '../types';
 import { colors, typography, spacing, radii } from '../design/tokens';
-import { pnlColor } from '../design/utils';
 
 interface CalendarGridProps {
     currentDate: Date;
@@ -76,8 +75,8 @@ export function CalendarGrid({ currentDate, trades, onMonthChange }: CalendarGri
             }
 
             // Text colors
-            let dateColor = colors.text.tertiary;
-            let pnlColor = colors.text.primary;
+            let dateColor: string = colors.text.tertiary;
+            let pnlColor: string = colors.text.primary;
 
             if (isPositive) pnlColor = '#34D399'; // Emerald 400
             if (isNegative) pnlColor = '#F87171'; // Red 400

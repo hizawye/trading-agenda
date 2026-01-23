@@ -66,26 +66,37 @@ export const useAlertStore = create<AlertState>((set, get) => ({
       ...alertData,
       id: generateId(),
     };
-    await db.insertAlert(alert);
-    set((state) => ({ alerts: [...state.alerts, alert].sort((a, b) => a.time.localeCompare(b.time)) }));
 
-    // Schedule notification for new alert
-    if (get().notificationsEnabled) {
-      await scheduleAlertNotification(alert);
+    try {
+      await db.insertAlert(alert);
+      set((state) => ({ alerts: [...state.alerts, alert].sort((a, b) => a.time.localeCompare(b.time)) }));
+
+      // Schedule notification for new alert
+      if (get().notificationsEnabled) {
+        await scheduleAlertNotification(alert);
+      }
+
+      return alert;
+    } catch (error) {
+      console.error('Failed to add alert:', error);
+      throw error;
     }
-
-    return alert;
   },
 
   updateAlert: async (alert) => {
-    await db.updateAlert(alert);
-    set((state) => ({
-      alerts: state.alerts.map((a) => (a.id === alert.id ? alert : a)),
-    }));
+    try {
+      await db.updateAlert(alert);
+      set((state) => ({
+        alerts: state.alerts.map((a) => (a.id === alert.id ? alert : a)),
+      }));
 
-    // Reschedule notification
-    if (get().notificationsEnabled) {
-      await scheduleAlertNotification(alert);
+      // Reschedule notification
+      if (get().notificationsEnabled) {
+        await scheduleAlertNotification(alert);
+      }
+    } catch (error) {
+      console.error('Failed to update alert:', error);
+      throw error;
     }
   },
 
