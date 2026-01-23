@@ -171,6 +171,18 @@ export const getSchemaVersion = async (): Promise<number> => {
   return result?.user_version ?? 0;
 };
 
+// Reset database to fresh state
+export const resetDatabase = async (): Promise<void> => {
+  const database = await getDatabase();
+  await database.execAsync(`
+    DROP TABLE IF EXISTS trades;
+    DROP TABLE IF EXISTS alerts;
+    DROP TABLE IF EXISTS rules;
+    PRAGMA user_version = 0;
+  `);
+  logger.info('Database reset complete - restart app to reinitialize');
+};
+
 // Trade CRUD operations
 export const insertTrade = async (trade: Trade): Promise<void> => {
   const database = await getDatabase();

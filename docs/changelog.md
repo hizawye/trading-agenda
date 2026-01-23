@@ -1,5 +1,20 @@
 # Trading Agenda - Changelog
 
+## [0.3.3] - 2026-01-23
+
+### Added
+- Database migration version tracking system using PRAGMA user_version
+- Atomic transaction support for migrations (BEGIN/COMMIT/ROLLBACK)
+- Migration registry pattern for sequential schema changes
+- `resetDatabase()` utility function for development/testing
+- `getSchemaVersion()` debug utility to check current migration version
+
+### Changed
+- Replaced fragile PRAGMA table_info column detection with versioned migrations
+- Migration system now idempotent - safe to re-run, handles existing columns gracefully
+- New installs bootstrap schema then jump to latest version
+- Existing installs run only pending migrations
+
 ## [0.3.2] - 2026-01-23
 
 ### Fixed

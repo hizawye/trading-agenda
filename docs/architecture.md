@@ -58,7 +58,17 @@ trading-agenda/
 ## Key Patterns
 - **Stores as single source of truth:** All data flows through Zustand stores
 - **Lazy database initialization:** DB opens on first access
+- **Versioned migrations:** Sequential schema changes tracked via PRAGMA user_version
+- **Atomic transactions:** Each migration wrapped in BEGIN/COMMIT/ROLLBACK for safety
 - **Default seeding:** Alerts and rules auto-seed on first launch
 - **Session auto-detection:** Current session determined by time
 - **Design system:** Centralized tokens for consistent styling across screens
 - **Component composition:** Screens built from reusable primitives (Card, Stat, FormModal, etc.)
+
+## Database Migration System
+- **Version tracking:** Uses SQLite's PRAGMA user_version (0 = fresh install)
+- **Migration registry:** Array of numbered migrations in database.ts
+- **Bootstrap vs upgrade:** New installs create schema then set version, existing DBs run pending migrations only
+- **Idempotent migrations:** Check for existing columns/indexes before adding
+- **Rollback on failure:** Transaction rollback prevents partial migrations
+- **Debug utilities:** getSchemaVersion() and resetDatabase() for development
