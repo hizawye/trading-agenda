@@ -347,3 +347,23 @@
 - **Result:** Combined Metro config + global polyfill approach
 - Testing in Expo Go required to verify complete fix
 
+## 2026-01-23: Database Migration Version Tracking System
+
+### PRAGMA user_version with Migration Registry
+**Decision:** Replace fragile column detection with versioned migration system
+**Rationale:**
+- Old approach (`PRAGMA table_info`) unreliable - no ordering, no rollback, schema drift risk
+- New system uses `PRAGMA user_version` for sequential migration tracking (1, 2, 3...)
+- Each migration wrapped in atomic transaction (BEGIN/COMMIT/ROLLBACK)
+- Migration registry pattern: array of versioned migrations with `up()` functions
+- New installs: bootstrap schema → jump to latest version
+- Existing installs: run only pending migrations
+- Idempotent migrations: check column existence before ALTER TABLE
+- Failed migrations auto-rollback, leaving DB in consistent state
+- **Benefits:**
+  - No partial migrations on crash
+  - Clear migration history
+  - Easy to add future migrations (just append to array)
+  - Debugging utility: `getSchemaVersion()` export
+- **Migration 1:** add_killzone_column (with idempotency check for existing DBs)
+
