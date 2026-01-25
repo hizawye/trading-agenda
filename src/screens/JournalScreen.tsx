@@ -1,31 +1,25 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, Image } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import { Paths, File as ExpoFile } from 'expo-file-system';
+import React, { useEffect, useState, useMemo } from 'react';
+import { View, StyleSheet, FlatList, Text, Alert } from 'react-native';
 import { useTradeStore } from '../stores/tradeStore';
 import { useRuleStore } from '../stores/ruleStore';
 import { useAlertStore } from '../stores/alertStore';
-import { Trade, Session, SetupType, TradeDirection, TradeOutcome, Confirmation, Killzone } from '../types';
-import { getSessionById, getCurrentSession, SESSIONS } from '../constants/sessions';
-import { DEFAULT_KILLZONES, getCurrentKillzone } from '../constants/killzones';
-import { calculateRiskReward, getNYTime, formatTimeRange, formatTime, getTimeUntil } from '../lib/utils';
-import { colors, typography, spacing, radii } from '../design/tokens';
-import { outcomeColor, pnlColor } from '../design/utils';
+import { Trade, Session, SetupType, TradeOutcome } from '../types';
+import { getSessionById, getCurrentSession } from '../constants/sessions';
+import { DEFAULT_KILLZONES } from '../constants/killzones';
+import { calculateRiskReward, getNYTime } from '../lib/utils';
+import { colors, typography, spacing } from '../design/tokens';
 import { FormModal } from '../components/FormModal';
-import { FormField, FormLabel } from '../components/FormField';
-import { OptionPicker } from '../components/OptionPicker';
 import { TradeCard } from '../components/TradeCard';
 import { FAB } from '../components/FAB';
-import { Card } from '../components/Card';
-import { Stat } from '../components/Stat';
-import { SessionBadge } from '../components/SessionBadge';
-
-const SETUP_TYPES: SetupType[] = ['continuation', 'reversal', 'liquidity_sweep', 'fvg_fill', 'breakout', 'other'];
-const CONFIRMATIONS: Confirmation[] = ['smt', 'mss', 'bos', 'fvg', 'swing_sweep', 'pd_array', 'time_window'];
-const OUTCOMES: TradeOutcome[] = ['win', 'loss', 'breakeven', 'pending'];
+import { TradeDashboard } from '../components/TradeDashboard';
+import { TradeFilters } from '../components/TradeFilters';
+import { FilterStats } from '../components/FilterStats';
+import { RulesReminder } from '../components/RulesReminder';
+import { TradeForm } from '../components/TradeForm';
+import { useTradeForm } from '../hooks/useTradeForm';
 
 export default function JournalScreen() {
-  const { trades, loadTrades, addTrade, updateTrade, deleteTrade, getTodayTrades, getTodayPnL, getWinRate } = useTradeStore();
+  const { trades, loadTrades, addTrade, updateTrade, deleteTrade, getTodayTrades, getTodayPnL, getTodayWinRate } = useTradeStore();
   const { rules, loadRules } = useRuleStore();
   const { loadAlerts, getNextAlert, initializeNotifications } = useAlertStore();
 
@@ -34,42 +28,21 @@ export default function JournalScreen() {
   const [showRules, setShowRules] = useState(true);
   const [currentTime, setCurrentTime] = useState(getNYTime());
 
-  // Dashboard state
-  const currentSession = getCurrentSession();
-  const currentKillzone = getCurrentKillzone();
-  const nextAlert = getNextAlert();
-  const todayTrades = getTodayTrades();
-  const todayPnL = getTodayPnL();
-  const todayWinRate = getWinRate(); // Note: this is actually overall winrate in store, check if we need today's
-  // The store's getWinRate() calculates for ALL trades unless filtered. 
-  // Let's calculate today's win rate locally for the dashboard
-  const todayCompleted = todayTrades.filter(t => t.outcome !== 'pending');
-  const todayWins = todayCompleted.filter(t => t.outcome === 'win').length;
-  const todayWinRateCalc = todayCompleted.length > 0 ? (todayWins / todayCompleted.length) * 100 : 0;
-
-  const timeUntilNext = nextAlert ? getTimeUntil(nextAlert.time) : null;
-
-  // Form state
-  const [session, setSession] = useState<Session>('ny_am');
-  const [timeWindow, setTimeWindow] = useState('');
-  const [killzone, setKillzone] = useState<Killzone>('ny_am_kz');
-  const [setupType, setSetupType] = useState<SetupType>('continuation');
-  const [direction, setDirection] = useState<TradeDirection>('long');
-  const [symbol, setSymbol] = useState('');
-  const [entry, setEntry] = useState('');
-  const [stopLoss, setStopLoss] = useState('');
-  const [takeProfit, setTakeProfit] = useState('');
-  const [outcome, setOutcome] = useState<TradeOutcome>('pending');
-  const [pnl, setPnl] = useState('');
-  const [notes, setNotes] = useState('');
-  const [confirmations, setConfirmations] = useState<Confirmation[]>([]);
-  const [images, setImages] = useState<string[]>([]);
-  const [quickMode, setQuickMode] = useState(true);
-
-  // Filter state
+  // Filters
   const [filterSession, setFilterSession] = useState<Session | 'all'>('all');
   const [filterSetup, setFilterSetup] = useState<SetupType | 'all'>('all');
   const [filterOutcome, setFilterOutcome] = useState<TradeOutcome | 'all'>('all');
+
+  const { values, handlers, isValidQuick, isValidFull } = useTradeForm();
+
+  // Dashboard data
+  const currentSession = getCurrentSession();
+  const nextAlert = getNextAlert();
+  const todayStats = useMemo(() => ({
+    tradeCount: getTodayTrades().length,
+    pnl: getTodayPnL(),
+    winRate: getTodayWinRate(),
+  }), [trades]);
 
   useEffect(() => {
     loadTrades();
@@ -81,67 +54,57 @@ export default function JournalScreen() {
     return () => clearInterval(timer);
   }, []);
 
-  const resetForm = () => {
-    const current = getCurrentSession();
-    const currentKz = getCurrentKillzone();
-    setSession(current?.id || 'ny_am');
-    setKillzone(currentKz?.id || 'ny_am_kz');
-    setTimeWindow('');
-    setSetupType('continuation');
-    setDirection('long');
-    setSymbol('');
-    setEntry('');
-    setStopLoss('');
-    setTakeProfit('');
-    setOutcome('pending');
-    setPnl('');
-    setNotes('');
-    setConfirmations([]);
-    setImages([]);
-    setEditingTrade(null);
-    setQuickMode(true);
-  };
+  // Memoized filtered trades
+  const filteredTrades = useMemo(() => {
+    return trades.filter((trade) => {
+      if (filterSession !== 'all' && trade.session !== filterSession) return false;
+      if (filterSetup !== 'all' && trade.setupType !== filterSetup) return false;
+      if (filterOutcome !== 'all' && trade.outcome !== filterOutcome) return false;
+      return true;
+    });
+  }, [trades, filterSession, filterSetup, filterOutcome]);
+
+  // Memoized filter stats
+  const filterStats = useMemo(() => {
+    const completed = filteredTrades.filter((t) => t.outcome !== 'pending');
+    const wins = completed.filter((t) => t.outcome === 'win').length;
+    const winRate = completed.length > 0 ? (wins / completed.length) * 100 : 0;
+    const totalPnL = completed.reduce((sum, t) => sum + (t.pnl || 0), 0);
+    const avgRR = completed.length > 0
+      ? completed.reduce((sum, t) => sum + (t.riskReward || 0), 0) / completed.length
+      : 0;
+    return { trades: filteredTrades.length, winRate, totalPnL, avgRR };
+  }, [filteredTrades]);
+
+  const hasActiveFilters = filterSession !== 'all' || filterSetup !== 'all' || filterOutcome !== 'all';
 
   const openAddModal = () => {
-    resetForm();
-    setQuickMode(true);
+    handlers.resetForm();
+    handlers.setQuickMode(true);
+    setEditingTrade(null);
     setShowRules(true);
     setModalVisible(true);
   };
 
   const openEditModal = (trade: Trade) => {
     setEditingTrade(trade);
-    setSession(trade.session);
-    setTimeWindow(trade.timeWindow);
-    setKillzone(trade.killzone || 'ny_am_kz');
-    setSetupType(trade.setupType);
-    setDirection(trade.direction);
-    setSymbol(trade.symbol);
-    setEntry(trade.entry.toString());
-    setStopLoss(trade.stopLoss.toString());
-    setTakeProfit(trade.takeProfit.toString());
-    setOutcome(trade.outcome);
-    setPnl(trade.pnl?.toString() || '');
-    setNotes(trade.notes);
-    setConfirmations(trade.confirmations);
-    setImages(trade.images || []);
-    setQuickMode(false);
+    handlers.loadTrade(trade);
     setModalVisible(true);
   };
 
   const handleSave = async () => {
     try {
-      const entryNum = parseFloat(entry) || 0;
-      const slNum = parseFloat(stopLoss) || 0;
-      const tpNum = parseFloat(takeProfit) || 0;
+      const entryNum = parseFloat(values.entry) || 0;
+      const slNum = parseFloat(values.stopLoss) || 0;
+      const tpNum = parseFloat(values.takeProfit) || 0;
       const rr = calculateRiskReward(entryNum, slNum, tpNum);
 
       let pnlValue: number | undefined = undefined;
-      if (pnl) {
-        const pnlNum = parseFloat(pnl);
-        if (outcome === 'loss') {
+      if (values.pnl) {
+        const pnlNum = parseFloat(values.pnl);
+        if (values.outcome === 'loss') {
           pnlValue = -Math.abs(pnlNum);
-        } else if (outcome === 'win') {
+        } else if (values.outcome === 'win') {
           pnlValue = Math.abs(pnlNum);
         } else {
           pnlValue = pnlNum;
@@ -150,21 +113,21 @@ export default function JournalScreen() {
 
       const tradeData = {
         timestamp: Date.now(),
-        session,
-        timeWindow,
-        killzone,
-        setupType,
-        direction,
-        symbol,
+        session: values.session,
+        timeWindow: values.timeWindow,
+        killzone: values.killzone,
+        setupType: values.setupType,
+        direction: values.direction,
+        symbol: values.symbol,
         entry: entryNum,
         stopLoss: slNum,
         takeProfit: tpNum,
-        outcome,
+        outcome: values.outcome,
         pnl: pnlValue,
         riskReward: rr,
-        images,
-        notes,
-        confirmations,
+        images: values.images,
+        notes: values.notes,
+        confirmations: values.confirmations,
       };
 
       if (editingTrade) {
@@ -174,7 +137,7 @@ export default function JournalScreen() {
       }
 
       setModalVisible(false);
-      resetForm();
+      handlers.resetForm();
     } catch (error) {
       console.error('Failed to save trade:', error);
       Alert.alert('Error', 'Failed to save trade. Please try again.');
@@ -191,156 +154,34 @@ export default function JournalScreen() {
         onPress: () => {
           deleteTrade(editingTrade.id);
           setModalVisible(false);
-          resetForm();
+          handlers.resetForm();
         },
       },
     ]);
   };
 
-  const toggleConfirmation = (c: Confirmation) => {
-    setConfirmations((prev) =>
-      prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]
-    );
-  };
-
-  const pickImage = async () => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permissionResult.granted) {
-      Alert.alert('Permission Required', 'Please allow access to your photo library.');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      quality: 0.8,
-    });
-
-    if (!result.canceled && result.assets[0]) {
-      const uri = result.assets[0].uri;
-      const filename = `trade_${Date.now()}.jpg`;
-      try {
-        const sourceFile = new ExpoFile(uri);
-        const destFile = new ExpoFile(Paths.document, filename);
-        await sourceFile.copy(destFile);
-        setImages((prev) => [...prev, destFile.uri]);
-      } catch {
-        setImages((prev) => [...prev, uri]);
-      }
-    }
-  };
-
-  const removeImage = (uri: string) => {
-    Alert.alert('Remove Image', 'Remove this screenshot?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: () => setImages((prev) => prev.filter((img) => img !== uri)) },
-    ]);
-  };
-
-  // Filtered trades
-  const filteredTrades = trades.filter((trade) => {
-    if (filterSession !== 'all' && trade.session !== filterSession) return false;
-    if (filterSetup !== 'all' && trade.setupType !== filterSetup) return false;
-    if (filterOutcome !== 'all' && trade.outcome !== filterOutcome) return false;
-    return true;
-  });
-
-  // Filter stats
-  const filterStats = (() => {
-    const completed = filteredTrades.filter((t) => t.outcome !== 'pending');
-    const wins = completed.filter((t) => t.outcome === 'win').length;
-    const winRate = completed.length > 0 ? (wins / completed.length) * 100 : 0;
-    const totalPnL = completed.reduce((sum, t) => sum + (t.pnl || 0), 0);
-    const avgRR = completed.length > 0
-      ? completed.reduce((sum, t) => sum + (t.riskReward || 0), 0) / completed.length
-      : 0;
-    return { trades: filteredTrades.length, winRate, totalPnL, avgRR };
-  })();
-
-  const hasActiveFilters = filterSession !== 'all' || filterSetup !== 'all' || filterOutcome !== 'all';
+  const saveDisabled = values.quickMode
+    ? !isValidQuick
+    : !isValidFull;
 
   return (
     <View style={styles.container}>
-      {/* Dashboard Section */}
-      <View style={styles.dashboard}>
-        {/* Session & Time */}
-        <View style={styles.headerRow}>
-          <View>
-            {currentSession ? (
-              <SessionBadge name={currentSession.name} color={currentSession.color} size="md" />
-            ) : (
-              <Text style={styles.offHours}>OFF</Text>
-            )}
-            <Text style={styles.currentTime}>
-              {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })} EST
-            </Text>
-          </View>
+      <TradeDashboard
+        currentSession={currentSession}
+        currentTime={currentTime}
+        nextAlert={nextAlert}
+        todayStats={todayStats}
+      />
 
-          {/* Next Alert */}
-          {nextAlert ? (
-            <View style={styles.nextAlert}>
-              <Text style={styles.nextAlertLabel}>Next: {nextAlert.label}</Text>
-              <Text style={styles.nextAlertTime}>
-                {formatTime(nextAlert.time)}
-                {timeUntilNext && <Text style={{ fontWeight: '400' }}> ({timeUntilNext.hours}h {timeUntilNext.minutes}m)</Text>}
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.nextAlert}><Text style={styles.nextAlertLabel}>No upcoming alerts</Text></View>
-          )}
-        </View>
+      <TradeFilters
+        filters={{ session: filterSession, setup: filterSetup, outcome: filterOutcome }}
+        onSessionChange={setFilterSession}
+        onSetupChange={setFilterSetup}
+        onOutcomeChange={setFilterOutcome}
+      />
 
-        {/* Today's Quick Stats */}
-        <View style={styles.todayStats}>
-          <Stat value={todayTrades.length} label="Today" />
-          <Stat
-            value={`${todayPnL >= 0 ? '+' : ''}${todayPnL.toFixed(2)}`}
-            label="P&L"
-            color={pnlColor(todayPnL)}
-          />
-          <Stat value={`${todayWinRateCalc.toFixed(0)}%`} label="Win %" />
-        </View>
-      </View>
-      {/* Filter Bar */}
-      <View style={styles.filterBar}>
-        <TouchableOpacity
-          style={[styles.filterChip, filterSession !== 'all' && styles.filterChipActive]}
-          onPress={() => setFilterSession(filterSession === 'all' ? SESSIONS[0].id : 'all')}
-        >
-          <Text style={[styles.filterChipText, filterSession !== 'all' && styles.filterChipTextActive]}>
-            {filterSession === 'all' ? 'All Sessions' : SESSIONS.find(s => s.id === filterSession)?.name}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.filterChip, filterSetup !== 'all' && styles.filterChipActive]}
-          onPress={() => setFilterSetup(filterSetup === 'all' ? 'continuation' : 'all')}
-        >
-          <Text style={[styles.filterChipText, filterSetup !== 'all' && styles.filterChipTextActive]}>
-            {filterSetup === 'all' ? 'All Setups' : filterSetup.replace('_', ' ')}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.filterChip, filterOutcome !== 'all' && styles.filterChipActive]}
-          onPress={() => setFilterOutcome(filterOutcome === 'all' ? 'win' : 'all')}
-        >
-          <Text style={[styles.filterChipText, filterOutcome !== 'all' && styles.filterChipTextActive]}>
-            {filterOutcome === 'all' ? 'All Outcomes' : filterOutcome.toUpperCase()}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Inline Stats (shown when filters active) */}
       {hasActiveFilters && filteredTrades.length > 0 && (
-        <Card>
-          <View style={styles.statsRow}>
-            <Stat value={filterStats.trades} label="Trades" />
-            <Stat value={`${filterStats.winRate.toFixed(0)}%`} label="Win Rate" />
-            <Stat value={`${filterStats.totalPnL >= 0 ? '+' : ''}${filterStats.totalPnL.toFixed(0)}`} label="P&L" />
-            <Stat value={filterStats.avgRR.toFixed(1)} label="Avg RR" />
-          </View>
-        </Card>
+        <FilterStats stats={filterStats} />
       )}
 
       <FlatList
@@ -367,146 +208,16 @@ export default function JournalScreen() {
 
       <FormModal
         visible={modalVisible}
-        title={editingTrade ? 'Edit Trade' : (quickMode ? 'Quick Add' : 'New Trade')}
+        title={editingTrade ? 'Edit Trade' : (values.quickMode ? 'Quick Add' : 'New Trade')}
         onClose={() => setModalVisible(false)}
         onSave={handleSave}
         onDelete={editingTrade ? handleDelete : undefined}
-        saveDisabled={quickMode ? !symbol.trim() : (!symbol.trim() || !entry || !stopLoss || !takeProfit)}
+        saveDisabled={saveDisabled}
       >
-        {/* Pre-Trade Rules Reminder (dismissible) */}
-        {!editingTrade && showRules && rules.filter(r => r.active).length > 0 && (
-          <View style={styles.rulesReminder}>
-            <View style={styles.rulesHeader}>
-              <Text style={styles.rulesTitle}>📋 Active Rules ({rules.filter(r => r.active).length})</Text>
-              <TouchableOpacity onPress={() => setShowRules(false)}>
-                <Text style={styles.rulesDismiss}>✕</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.rulesList}>
-              {rules.filter(r => r.active).slice(0, 3).map((rule) => (
-                <Text key={rule.id} style={styles.ruleItem}>• {rule.rule}</Text>
-              ))}
-              {rules.filter(r => r.active).length > 3 && (
-                <Text style={styles.rulesMore}>+{rules.filter(r => r.active).length - 3} more...</Text>
-              )}
-            </View>
-          </View>
+        {!editingTrade && showRules && (
+          <RulesReminder rules={rules} onDismiss={() => setShowRules(false)} />
         )}
-
-        {quickMode && !editingTrade ? (
-          <>
-            {/* Quick Mode: Essential fields only */}
-            <FormField label="Symbol" value={symbol} onChangeText={setSymbol} placeholder="ES, NQ, BTC..." />
-
-            <FormLabel>Direction</FormLabel>
-            <OptionPicker
-              options={[
-                { value: 'long' as TradeDirection, label: 'LONG', color: colors.semantic.success },
-                { value: 'short' as TradeDirection, label: 'SHORT', color: colors.semantic.error },
-              ]}
-              selected={direction}
-              onSelect={setDirection}
-            />
-
-            <FormLabel>Outcome</FormLabel>
-            <OptionPicker
-              options={OUTCOMES.map((o) => ({ value: o, label: o.toUpperCase(), color: outcomeColor(o) }))}
-              selected={outcome}
-              onSelect={setOutcome}
-            />
-
-            <FormField label="P&L" value={pnl} onChangeText={setPnl} keyboardType="decimal-pad" placeholder="0.00" />
-
-            <TouchableOpacity style={styles.moreDetailsBtn} onPress={() => setQuickMode(false)}>
-              <Text style={styles.moreDetailsText}>+ More Details</Text>
-            </TouchableOpacity>
-          </>
-        ) : (
-          <>
-            {/* Full Mode: All fields */}
-            {!editingTrade && (
-              <TouchableOpacity style={styles.quickModeBtn} onPress={() => setQuickMode(true)}>
-                <Text style={styles.quickModeText}>← Quick Add</Text>
-              </TouchableOpacity>
-            )}
-
-            <FormLabel>Killzone</FormLabel>
-            <OptionPicker
-              options={DEFAULT_KILLZONES.map((kz) => ({ value: kz.id, label: kz.name, color: kz.color }))}
-              selected={killzone}
-              onSelect={(kz) => {
-                setKillzone(kz);
-                const kzInfo = DEFAULT_KILLZONES.find((k) => k.id === kz);
-                if (kzInfo) setSession(kzInfo.session);
-              }}
-            />
-
-            <FormLabel>Direction</FormLabel>
-            <OptionPicker
-              options={[
-                { value: 'long' as TradeDirection, label: 'LONG', color: colors.semantic.success },
-                { value: 'short' as TradeDirection, label: 'SHORT', color: colors.semantic.error },
-              ]}
-              selected={direction}
-              onSelect={setDirection}
-            />
-
-            <FormLabel>Setup Type</FormLabel>
-            <OptionPicker
-              options={SETUP_TYPES.map((s) => ({ value: s, label: s.replace('_', ' ') }))}
-              selected={setupType}
-              onSelect={setSetupType}
-            />
-
-            <FormLabel>Confirmations</FormLabel>
-            <OptionPicker
-              options={CONFIRMATIONS.map((c) => ({ value: c, label: c.toUpperCase() }))}
-              selected={confirmations}
-              onSelect={toggleConfirmation}
-              multiple
-            />
-
-            <FormField label="Symbol" value={symbol} onChangeText={setSymbol} placeholder="ES, NQ, BTC..." />
-
-            <View style={styles.priceRow}>
-              <View style={styles.priceField}>
-                <FormField label="Entry" value={entry} onChangeText={setEntry} keyboardType="decimal-pad" placeholder="0.00" />
-              </View>
-              <View style={styles.priceField}>
-                <FormField label="Stop Loss" value={stopLoss} onChangeText={setStopLoss} keyboardType="decimal-pad" placeholder="0.00" />
-              </View>
-              <View style={styles.priceField}>
-                <FormField label="Take Profit" value={takeProfit} onChangeText={setTakeProfit} keyboardType="decimal-pad" placeholder="0.00" />
-              </View>
-            </View>
-
-            <FormLabel>Outcome</FormLabel>
-            <OptionPicker
-              options={OUTCOMES.map((o) => ({ value: o, label: o.toUpperCase(), color: outcomeColor(o) }))}
-              selected={outcome}
-              onSelect={setOutcome}
-            />
-
-            <FormField label="P&L (optional)" value={pnl} onChangeText={setPnl} keyboardType="decimal-pad" placeholder="0.00" />
-
-            <FormField label="Notes" value={notes} onChangeText={setNotes} placeholder="Trade notes..." multiline />
-
-            <FormLabel>Screenshots</FormLabel>
-            <View style={styles.imagesContainer}>
-              {images.map((uri, index) => (
-                <TouchableOpacity key={index} onPress={() => removeImage(uri)} style={styles.imageWrapper}>
-                  <Image source={{ uri }} style={styles.thumbnail} />
-                  <View style={styles.removeImageBadge}>
-                    <Text style={styles.removeImageText}>×</Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-              <TouchableOpacity style={styles.addImageBtn} onPress={pickImage}>
-                <Text style={styles.addImageText}>+</Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
+        <TradeForm values={values} handlers={handlers} isEditing={!!editingTrade} />
       </FormModal>
     </View>
   );
@@ -514,167 +225,8 @@ export default function JournalScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg.primary },
-  filterBar: {
-    flexDirection: 'row',
-    padding: spacing.sm,
-    gap: spacing.sm,
-    backgroundColor: colors.bg.secondary,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.bg.tertiary,
-  },
-  filterChip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.bg.tertiary,
-    borderRadius: radii.full,
-    borderWidth: 1,
-    borderColor: colors.text.tertiary,
-  },
-  filterChipActive: {
-    backgroundColor: colors.semantic.success,
-    borderColor: colors.semantic.success,
-  },
-  filterChipText: {
-    ...typography.caption,
-    fontWeight: '600',
-    color: colors.text.secondary,
-  },
-  filterChipTextActive: {
-    color: '#FFF',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
   list: { padding: spacing.md },
   empty: { alignItems: 'center', marginTop: 100 },
   emptyText: { ...typography.body, color: colors.text.primary },
   emptySubtext: { ...typography.caption, marginTop: spacing.sm },
-  priceRow: { flexDirection: 'row', gap: spacing.sm },
-  priceField: { flex: 1 },
-  imagesContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  imageWrapper: { position: 'relative' },
-  thumbnail: { width: 80, height: 80, borderRadius: radii.sm, backgroundColor: colors.bg.tertiary },
-  removeImageBadge: {
-    position: 'absolute',
-    top: -6,
-    right: -6,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: colors.semantic.error,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  removeImageText: { color: '#FFF', fontSize: 16, fontWeight: 'bold', marginTop: -2 },
-  addImageBtn: {
-    width: 80,
-    height: 80,
-    borderRadius: radii.sm,
-    backgroundColor: colors.bg.tertiary,
-    borderWidth: 2,
-    borderColor: colors.text.tertiary,
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addImageText: { color: colors.text.secondary, fontSize: 28 },
-  moreDetailsBtn: {
-    marginTop: spacing.md,
-    padding: spacing.md,
-    backgroundColor: colors.bg.tertiary,
-    borderRadius: radii.md,
-    alignItems: 'center',
-  },
-  moreDetailsText: {
-    ...typography.body,
-    color: colors.semantic.success,
-    fontWeight: '600',
-  },
-  quickModeBtn: {
-    marginBottom: spacing.sm,
-    padding: spacing.sm,
-    alignItems: 'flex-start',
-  },
-  quickModeText: {
-    ...typography.caption,
-    color: colors.semantic.success,
-    fontWeight: '600',
-  },
-  rulesReminder: {
-    backgroundColor: colors.bg.tertiary,
-    borderRadius: radii.md,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.semantic.warning,
-  },
-  rulesHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  rulesTitle: {
-    ...typography.body,
-    fontWeight: '600',
-    color: colors.text.primary,
-  },
-  rulesDismiss: {
-    ...typography.title,
-    color: colors.text.tertiary,
-  },
-  rulesList: {
-    gap: spacing.xs,
-  },
-  ruleItem: {
-    ...typography.caption,
-    color: colors.text.secondary,
-  },
-  rulesMore: {
-    ...typography.caption,
-    color: colors.text.tertiary,
-    fontStyle: 'italic',
-  },
-  dashboard: {
-    padding: spacing.md,
-    backgroundColor: colors.bg.secondary,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.bg.tertiary,
-    gap: spacing.md,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  offHours: {
-    ...typography.title,
-    color: colors.text.tertiary,
-    fontWeight: 'bold',
-  },
-  currentTime: {
-    ...typography.heading,
-    color: colors.text.primary,
-    marginTop: 2,
-  },
-  nextAlert: {
-    alignItems: 'flex-end',
-  },
-  nextAlertLabel: {
-    ...typography.caption,
-    color: colors.text.secondary,
-  },
-  nextAlertTime: {
-    ...typography.body,
-    fontWeight: 'bold',
-    color: colors.semantic.success,
-  },
-  todayStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    backgroundColor: colors.bg.tertiary,
-    padding: spacing.sm,
-    borderRadius: radii.md,
-  },
 });

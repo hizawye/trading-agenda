@@ -22,6 +22,7 @@ interface TradeState {
   getTodayKillzonePnL: (killzone: Killzone) => number;
   getTodayTrades: () => Trade[];
   getTodayPnL: () => number;
+  getTodayWinRate: () => number;
 }
 
 export const useTradeStore = create<TradeState>((set, get) => ({
@@ -116,5 +117,13 @@ export const useTradeStore = create<TradeState>((set, get) => ({
     return get()
       .getTodayTrades()
       .reduce((sum, t) => sum + (t.pnl || 0), 0);
+  },
+
+  getTodayWinRate: () => {
+    const todayTrades = get().getTodayTrades();
+    const completed = todayTrades.filter((t) => t.outcome !== 'pending');
+    if (completed.length === 0) return 0;
+    const wins = completed.filter((t) => t.outcome === 'win').length;
+    return (wins / completed.length) * 100;
   },
 }));

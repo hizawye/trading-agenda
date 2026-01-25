@@ -1,5 +1,29 @@
 # Trading Agenda - Changelog
 
+## [0.4.0] - 2026-01-25
+
+### Security
+- **Fixed SQL injection vulnerability:** Replaced string interpolation with parameterized queries in `insertTrade` and `updateTrade` functions
+- Removed unsafe `safeStr`, `nullOrStr`, `nullOrNum` helper functions
+
+### Added
+- `getTodayWinRate()` method in tradeStore for dashboard stats
+- **5 new extracted components:**
+  - `TradeDashboard.tsx` - Session display, next alert, today stats
+  - `TradeFilters.tsx` - Filter chips for session/setup/outcome
+  - `FilterStats.tsx` - Stats card shown when filters active
+  - `RulesReminder.tsx` - Pre-trade rules reminder in modal
+  - `TradeForm.tsx` - Quick/Full trade form with all fields
+- `useTradeForm` hook - Encapsulates all form state and handlers
+
+### Changed
+- JournalScreen refactored from 681 → 233 lines (66% reduction)
+- Added `useMemo` for `filteredTrades`, `filterStats`, and `todayStats` calculations
+- Fixed stray `console.log` → `logger.info` in database migration
+
+### Performance
+- Memoized expensive filtering and stats calculations to prevent unnecessary re-renders
+
 ## [0.3.3] - 2026-01-23
 
 ### Added

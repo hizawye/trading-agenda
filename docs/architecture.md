@@ -20,14 +20,21 @@ trading-agenda/
 │   ├── components/        # Reusable UI components
 │   │   ├── Card.tsx       # Minimal card wrapper
 │   │   ├── FAB.tsx        # Floating action button
+│   │   ├── FilterStats.tsx # Stats card for filtered results
 │   │   ├── FormField.tsx  # Labeled text input
 │   │   ├── FormModal.tsx  # Generic modal with save/cancel/delete
 │   │   ├── OptionPicker.tsx # Multi-option selector
+│   │   ├── RulesReminder.tsx # Pre-trade rules reminder
 │   │   ├── ScreenLayout.tsx # Screen wrapper with padding
 │   │   ├── SessionBadge.tsx # Color-coded session badge
 │   │   ├── Stat.tsx       # Value + label display
 │   │   ├── StatRow.tsx    # Horizontal stats row
-│   │   └── TradeCard.tsx  # Trade list item
+│   │   ├── TradeCard.tsx  # Trade list item
+│   │   ├── TradeDashboard.tsx # Session/time/stats dashboard
+│   │   ├── TradeFilters.tsx # Filter chips component
+│   │   └── TradeForm.tsx  # Quick/Full trade entry form
+│   ├── hooks/             # Custom React hooks
+│   │   └── useTradeForm.ts # Trade form state management
 │   ├── design/            # Design system
 │   │   ├── tokens.ts      # Colors, typography, spacing, radii
 │   │   └── utils.ts       # Color helper functions
