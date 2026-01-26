@@ -45,10 +45,13 @@ export default function JournalScreen() {
   }), [trades]);
 
   useEffect(() => {
+    const init = async () => {
+      await initializeNotifications();  // Wait for permissions first
+      await loadAlerts();               // Then load and schedule
+    };
     loadTrades();
     loadRules();
-    loadAlerts();
-    initializeNotifications();
+    init();
 
     const timer = setInterval(() => setCurrentTime(getNYTime()), 1000);
     return () => clearInterval(timer);

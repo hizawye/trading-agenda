@@ -80,7 +80,7 @@
 - None currently identified
 
 ## Latest Fix (2026-01-26)
-- **Notification race condition fixed:** `initializeNotifications()` no longer tries to schedule with empty alerts array
+- **Notification init sequencing:** Async IIFE ensures permissions granted before alert scheduling
 
 ## Where to Start Next
 1. **Run Expo Dev Server:** `npx expo start` - test in Expo Go to verify fix works in dev mode

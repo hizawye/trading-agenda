@@ -1,5 +1,10 @@
 # Trading Agenda - Changelog
 
+## [0.4.2] - 2026-01-26
+
+### Fixed
+- **Notification init sequencing:** Wrapped initialization in async IIFE to ensure `initializeNotifications()` completes before `loadAlerts()` runs, guaranteeing permissions are granted before scheduling
+
 ## [0.4.1] - 2026-01-26
 
 ### Fixed
