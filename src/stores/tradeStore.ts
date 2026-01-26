@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { Trade, Session, Killzone } from '../types';
 import * as db from '../lib/database';
-import { generateId } from '../lib/utils';
+import { generateId, getNYTime } from '../lib/utils';
 
 interface TradeState {
   trades: Trade[];
@@ -108,7 +108,7 @@ export const useTradeStore = create<TradeState>((set, get) => ({
   },
 
   getTodayTrades: () => {
-    const today = new Date();
+    const today = getNYTime();
     today.setHours(0, 0, 0, 0);
     return get().trades.filter((t) => t.timestamp >= today.getTime());
   },

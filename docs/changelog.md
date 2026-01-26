@@ -1,5 +1,13 @@
 # Trading Agenda - Changelog
 
+## [0.4.4] - 2026-01-26
+
+### Fixed
+- **NY timezone enforcement:** `getTodayTrades()` and `getNextAlert()` now use NY time instead of device local time
+  - Trades reset at NY midnight regardless of device timezone
+  - Alert scheduling correctly interprets times as NY timezone
+- **CI improvement:** Added Gradle cache to GitHub Actions build workflow
+
 ## [0.4.3] - 2026-01-26
 
 ### Added

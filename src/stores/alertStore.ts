@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { Alert } from '../types';
 import * as db from '../lib/database';
 import { DEFAULT_ALERTS } from '../constants/defaultAlerts';
-import { generateId } from '../lib/utils';
+import { generateId, getNYTime } from '../lib/utils';
 import {
   scheduleAlertNotification,
   cancelAlertNotification,
@@ -125,7 +125,7 @@ export const useAlertStore = create<AlertState>((set, get) => ({
   },
 
   getNextAlert: () => {
-    const now = new Date();
+    const now = getNYTime();
     const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
     const currentDay = now.getDay();
 

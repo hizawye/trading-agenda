@@ -81,7 +81,8 @@
 - None currently identified
 
 ## Latest Fix (2026-01-26)
-- **Notification init sequencing:** Async IIFE ensures permissions granted before alert scheduling
+- **NY timezone enforcement:** `getTodayTrades()` and `getNextAlert()` now use `getNYTime()` instead of `new Date()`
+- Trades reset at NY midnight, alerts interpret times as NY timezone
 
 ## Where to Start Next
 1. **Run Expo Dev Server:** `npx expo start` - test in Expo Go to verify fix works in dev mode
