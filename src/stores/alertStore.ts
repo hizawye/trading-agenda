@@ -33,10 +33,7 @@ export const useAlertStore = create<AlertState>((set, get) => ({
   initializeNotifications: async () => {
     const granted = await requestNotificationPermissions();
     set({ notificationsEnabled: granted });
-    if (granted) {
-      const { alerts } = get();
-      await scheduleAllAlerts(alerts);
-    }
+    // Don't schedule here - let loadAlerts handle it after alerts are loaded
   },
 
   loadAlerts: async () => {

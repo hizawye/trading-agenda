@@ -1,5 +1,13 @@
 # Trading Agenda - Changelog
 
+## [0.4.1] - 2026-01-26
+
+### Fixed
+- **Notification race condition:** Alerts were not firing due to initialization order bug
+  - `initializeNotifications()` tried to schedule alerts before they were loaded (empty array)
+  - `loadAlerts()` checked permissions before they were granted (always false)
+  - Fix: Removed duplicate scheduling from `initializeNotifications()`, letting `loadAlerts()` handle all scheduling after permissions are set
+
 ## [0.4.0] - 2026-01-25
 
 ### Security

@@ -79,6 +79,9 @@
 ## Known Issues
 - None currently identified
 
+## Latest Fix (2026-01-26)
+- **Notification race condition fixed:** `initializeNotifications()` no longer tries to schedule with empty alerts array
+
 ## Where to Start Next
 1. **Run Expo Dev Server:** `npx expo start` - test in Expo Go to verify fix works in dev mode
 2. **Preview Build:** `eas build --profile preview --platform android` - create new APK with fix
