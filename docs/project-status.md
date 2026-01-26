@@ -1,14 +1,34 @@
 # Trading Agenda - Project Status
 
 ## Current State
-**Phase:** Code Quality Refactor ✅
+**Phase:** ICT Module Refactor ✅
 **Last Updated:** 2026-01-26
 
 ## What's Done
 - Project initialization with Expo + TypeScript
 - Core data models (Trade, Alert, Rule) with killzone support
 - SQLite database setup with CRUD operations + killzone migration
-- Zustand state management stores (trade, alert, rule, settings)
+- Zustand state management stores (trade, alert, rule, settings, ict)
+- **GitHub Actions CI:** Android build workflow with APK artifact (1-day retention)
+- **ICT Module Refactor (v0.5.0):**
+  - New modular architecture at `src/lib/ict/` with 10 files
+  - 14 weekly templates across 5 categories (Classic, Wednesday, Consolidation, Seek & Destroy, Monday Expansion)
+  - 8 time macros with precision windows (Silver Bullet, London Fix, etc.)
+  - Session quarters + micro subdivisions (4 micros per quarter)
+  - Taylor 3-Day Cycle (Buy/Sell/Sell Short)
+  - 25 ICT core concepts with categories
+  - 5 ICT setups with step-by-step instructions
+  - PD array hierarchy, Fibonacci levels, risk rules
+- **ICT Reference Screen:** New screen with 5 tabs
+  - Concepts (searchable, grouped by category)
+  - Setups (OTE, Silver Bullet, TGIF, AM A+, OSOK)
+  - Time (macros, sessions, 3-Day Cycle)
+  - Structure (PD arrays, Fibonacci)
+  - Rules (risk management, key principles)
+- **Enhanced Components:**
+  - CurrentPhaseCard: active macro + micro quarter progress
+  - SessionTimeline: 8 time macros with category colors
+  - TemplateSelector: 5 category tabs + 14 templates
 - **GitHub Actions CI:** Android build workflow with APK artifact (1-day retention)
 - **UX Phase 1 - 3-Tab Navigation:**
   - Today: current session, next alert, quick stats, session performance, add trade CTA

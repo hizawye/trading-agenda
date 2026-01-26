@@ -17,8 +17,10 @@ trading-agenda/
 ├── App.tsx                 # Entry point (loads settings on init)
 ├── src/
 │   ├── screens/           # Tab screens (refactored to use shared components)
+│   │   └── ICTReferenceScreen.tsx # ICT concepts, setups, time reference
 │   ├── components/        # Reusable UI components
 │   │   ├── Card.tsx       # Minimal card wrapper
+│   │   ├── CurrentPhaseCard.tsx # AMD phase + macro + micro quarter display
 │   │   ├── FAB.tsx        # Floating action button
 │   │   ├── FilterStats.tsx # Stats card for filtered results
 │   │   ├── FormField.tsx  # Labeled text input
@@ -27,12 +29,15 @@ trading-agenda/
 │   │   ├── RulesReminder.tsx # Pre-trade rules reminder
 │   │   ├── ScreenLayout.tsx # Screen wrapper with padding
 │   │   ├── SessionBadge.tsx # Color-coded session badge
+│   │   ├── SessionTimeline.tsx # Time macros timeline display
 │   │   ├── Stat.tsx       # Value + label display
 │   │   ├── StatRow.tsx    # Horizontal stats row
+│   │   ├── TemplateSelector.tsx # Weekly template picker with categories
 │   │   ├── TradeCard.tsx  # Trade list item
 │   │   ├── TradeDashboard.tsx # Session/time/stats dashboard
 │   │   ├── TradeFilters.tsx # Filter chips component
-│   │   └── TradeForm.tsx  # Quick/Full trade entry form
+│   │   ├── TradeForm.tsx  # Quick/Full trade entry form
+│   │   └── WeeklyOverview.tsx # Weekly template day grid
 │   ├── hooks/             # Custom React hooks
 │   │   └── useTradeForm.ts # Trade form state management
 │   ├── design/            # Design system
@@ -41,13 +46,28 @@ trading-agenda/
 │   ├── lib/               # Core utilities
 │   │   ├── database.ts    # SQLite operations
 │   │   ├── notifications.ts # Push notification setup
-│   │   └── utils.ts       # Helper functions
+│   │   ├── utils.ts       # Helper functions
+│   │   ├── ictProfiles.ts # Re-exports from ict/ for backward compat
+│   │   └── ict/           # ICT Module (NEW)
+│   │       ├── index.ts   # Barrel export
+│   │       ├── types.ts   # All ICT types
+│   │       ├── timeMacros.ts # 8 time macros + helpers
+│   │       ├── quarters.ts # Session quarters + micro cycles
+│   │       ├── weeklyProfiles.ts # 14 weekly templates
+│   │       ├── sessionStrategies.ts # 4 session strategies
+│   │       ├── threeDayCycle.ts # Taylor 3-Day Cycle
+│   │       ├── basics.ts  # ICT reference (concepts, setups, PD arrays)
+│   │       ├── amd.ts     # AMD phase definitions
+│   │       ├── marketState.ts # Aggregated state
+│   │       └── intradayProfiles.ts # Intraday profile types
 │   ├── stores/            # Zustand state stores
 │   │   ├── tradeStore.ts
 │   │   ├── alertStore.ts
 │   │   ├── ruleStore.ts
-│   │   └── settingsStore.ts
+│   │   ├── settingsStore.ts
+│   │   └── ictStore.ts    # ICT state (templates, macros, quarters)
 │   ├── types/             # TypeScript definitions
+│   │   └── ict.ts         # Re-exports from lib/ict/types
 │   ├── constants/         # Static data
 │   │   ├── sessions.ts    # Trading sessions
 │   │   ├── killzones.ts   # Killzone definitions

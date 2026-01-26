@@ -1,5 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 import { Trade, Alert, Rule, Killzone } from '../types';
+import { WeeklyTemplateId } from '../types/ict';
 import logger from './logger';
 
 let db: SQLite.SQLiteDatabase | null = null;
@@ -28,6 +29,18 @@ const MIGRATIONS: Migration[] = [
 
       // Migrate existing timeWindow data to killzone enum
       await migrateTimeWindowToKillzone(db);
+    }
+  },
+  {
+    version: 2,
+    name: 'add_weekly_template_selections',
+    up: async (db) => {
+      await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS weekly_template_selections (
+          week_start_date TEXT PRIMARY KEY,
+          template_id TEXT NOT NULL
+        );
+      `);
     }
   },
   // Future migrations added here
@@ -381,3 +394,29 @@ const parseRule = (row: any): Rule => ({
   order: Number(row.order) || 0,
   active: row.active === 1 || row.active === '1' || row.active === true,
 });
+
+// Weekly Template Selection CRUD
+export const setWeekTemplate = async (weekStartDate: string, templateId: WeeklyTemplateId): Promise<void> => {
+  const database = await getDatabase();
+  await database.runAsync(
+    `INSERT OR REPLACE INTO weekly_template_selections (week_start_date, template_id) VALUES (?, ?)`,
+    [weekStartDate, templateId]
+  );
+};
+
+export const getWeekTemplate = async (weekStartDate: string): Promise<WeeklyTemplateId | null> => {
+  const database = await getDatabase();
+  const row = await database.getFirstAsync<{ template_id: string }>(
+    'SELECT template_id FROM weekly_template_selections WHERE week_start_date = ?',
+    [weekStartDate]
+  );
+  return row ? (row.template_id as WeeklyTemplateId) : null;
+};
+
+export const getWeekStartDate = (date: Date = new Date()): string => {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday
+  d.setDate(diff);
+  return d.toISOString().split('T')[0];
+};

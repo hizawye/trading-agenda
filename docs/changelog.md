@@ -1,5 +1,33 @@
 # Trading Agenda - Changelog
 
+## [0.5.0] - 2026-01-26
+
+### Added
+- **ICT Module Refactor:** New modular architecture at `src/lib/ict/`
+  - `types.ts` - All ICT types (TimeMacro, QuarterState, SessionStrategy, CycleDay, etc.)
+  - `timeMacros.ts` - 8 time macros with precision windows (Silver Bullet, London Fix, etc.)
+  - `quarters.ts` - Session quarters + micro subdivisions (4 micros per quarter)
+  - `weeklyProfiles.ts` - 14 weekly templates across 5 categories
+  - `sessionStrategies.ts` - 4 Asia→London→NY strategy patterns
+  - `threeDayCycle.ts` - Taylor 3-Day Cycle (Buy/Sell/Sell Short)
+  - `basics.ts` - Comprehensive ICT reference (25 concepts, setups, PD arrays)
+  - `amd.ts`, `marketState.ts`, `intradayProfiles.ts` - Extracted modules
+- **14 Weekly Templates:** Classic (2), Wednesday (4), Consolidation (2), Seek & Destroy (2), Monday Expansion (4)
+- **ICT Reference Screen:** New screen with 5 tabs (Concepts, Setups, Time, Structure, Rules)
+  - Searchable concepts grouped by category
+  - Step-by-step setup instructions (OTE, Silver Bullet, TGIF, AM A+, OSOK)
+  - Time macros, daily sessions, Taylor 3-Day Cycle
+  - PD array hierarchy, Fibonacci levels
+  - Risk management rules and key principles
+- **Enhanced CurrentPhaseCard:** Shows active macro + micro quarter progress bar
+- **Enhanced SessionTimeline:** Displays 8 time macros with category colors
+- **Enhanced TemplateSelector:** 5 category tabs + 14 templates with bull/bear indicators
+
+### Changed
+- `src/lib/ictProfiles.ts` now re-exports from `src/lib/ict/` for backward compatibility
+- `src/types/ict.ts` re-exports types from new module location
+- MoreScreen menu now includes ICT Reference entry
+
 ## [0.4.4] - 2026-01-26
 
 ### Fixed

@@ -29,10 +29,22 @@ export default function MoreScreen({ navigation }: any) {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Insights</Text>
         <MenuItem
+          icon="📈"
+          title="ICT Profiles"
+          subtitle="Daily phases & expectations"
+          onPress={() => navigation.navigate('Profiles')}
+        />
+        <MenuItem
           icon="📊"
           title="Analytics"
           subtitle="Performance & statistics"
           onPress={() => navigation.navigate('Analytics')}
+        />
+        <MenuItem
+          icon="📚"
+          title="ICT Reference"
+          subtitle="Concepts, setups & strategies"
+          onPress={() => navigation.navigate('ICTReference')}
         />
       </View>
 

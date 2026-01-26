@@ -3,7 +3,6 @@ import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
-import { Text } from 'react-native';
 
 import JournalScreen from '../screens/JournalScreen';
 import MoreScreen from '../screens/MoreScreen';
@@ -11,6 +10,8 @@ import AnalyticsScreen from '../screens/AnalyticsScreen';
 import AlertsScreen from '../screens/AlertsScreen';
 import RulesScreen from '../screens/RulesScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import ProfilesScreen from '../screens/ProfilesScreen';
+import ICTReferenceScreen from '../screens/ICTReferenceScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -48,6 +49,11 @@ function MoreStack() {
         options={{ title: 'More' }}
       />
       <Stack.Screen
+        name="Profiles"
+        component={ProfilesScreen}
+        options={{ title: 'ICT Profiles' }}
+      />
+      <Stack.Screen
         name="Analytics"
         component={AnalyticsScreen}
       />
@@ -62,6 +68,11 @@ function MoreStack() {
       <Stack.Screen
         name="Settings"
         component={SettingsScreen}
+      />
+      <Stack.Screen
+        name="ICTReference"
+        component={ICTReferenceScreen}
+        options={{ title: 'ICT Reference' }}
       />
     </Stack.Navigator>
   );
