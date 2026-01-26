@@ -1,5 +1,15 @@
 # Trading Agenda - Changelog
 
+## [0.4.3] - 2026-01-26
+
+### Added
+- **GitHub Actions workflow:** Android build CI pipeline (`.github/workflows/build.yml`)
+  - Triggers on push to main and manual dispatch
+  - Java 17 (Zulu), Node 20, npm ci
+  - TypeScript check before build
+  - Expo prebuild + Gradle assembleRelease
+  - APK artifact with 1-day retention
+
 ## [0.4.2] - 2026-01-26
 
 ### Fixed

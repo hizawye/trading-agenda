@@ -2,13 +2,14 @@
 
 ## Current State
 **Phase:** Code Quality Refactor ✅
-**Last Updated:** 2026-01-25
+**Last Updated:** 2026-01-26
 
 ## What's Done
 - Project initialization with Expo + TypeScript
 - Core data models (Trade, Alert, Rule) with killzone support
 - SQLite database setup with CRUD operations + killzone migration
 - Zustand state management stores (trade, alert, rule, settings)
+- **GitHub Actions CI:** Android build workflow with APK artifact (1-day retention)
 - **UX Phase 1 - 3-Tab Navigation:**
   - Today: current session, next alert, quick stats, session performance, add trade CTA
   - Journal: trade list with filters and inline stats
